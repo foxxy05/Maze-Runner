@@ -43,14 +43,14 @@ void drawAnimatedBackground(sf::RenderWindow& window, float elapsedTime) {
 
     // Vertical drifting lines
     for (float x = -spacing + offset; x <= static_cast<float>(cfg::WINDOW_WIDTH) + spacing; x += spacing) {
-        lines.append(sf::Vertex(sf::Vector2f(x, 0.0f), Theme::MenuGrid));
-        lines.append(sf::Vertex(sf::Vector2f(x, static_cast<float>(cfg::WINDOW_HEIGHT)), Theme::MenuGrid));
+        lines.append(sf::Vertex(sf::Vector2f(x, 0.0f), Theme::GridLine));
+        lines.append(sf::Vertex(sf::Vector2f(x, static_cast<float>(cfg::WINDOW_HEIGHT)), Theme::GridLine));
     }
 
     // Horizontal drifting lines
     for (float y = -spacing + offset; y <= static_cast<float>(cfg::WINDOW_HEIGHT) + spacing; y += spacing) {
-        lines.append(sf::Vertex(sf::Vector2f(0.0f, y), Theme::MenuGrid));
-        lines.append(sf::Vertex(sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH), y), Theme::MenuGrid));
+        lines.append(sf::Vertex(sf::Vector2f(0.0f, y), Theme::GridLine));
+        lines.append(sf::Vertex(sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH), y), Theme::GridLine));
     }
 
     window.draw(lines);
@@ -122,8 +122,8 @@ void MenuList::draw(sf::RenderWindow& window, const sf::Font& fontBold, const sf
         float yPos = centerStart.y + static_cast<float>(i) * itemSpacing;
         sf::FloatRect bounds(centerStart.x - itemWidth / 2.0f, yPos - itemH / 2.0f, itemWidth, itemH);
 
-        sf::Color bgCol = isSelected ? sf::Color(18, 30, 52, 230) : Theme::Panel;
-        sf::Color outlineCol = isSelected ? Theme::Cyan : Theme::PanelOutline;
+        sf::Color bgCol = Theme::Panel;
+        sf::Color outlineCol = isSelected ? Theme::Orange : Theme::PanelBorder;
         float outlineThick = isSelected ? 2.0f : 1.0f;
 
         drawPanel(window, bounds, bgCol, outlineCol, outlineThick);
@@ -132,17 +132,17 @@ void MenuList::draw(sf::RenderWindow& window, const sf::Font& fontBold, const sf
             // Selected left highlight bar
             sf::RectangleShape bar(sf::Vector2f(4.0f, itemH));
             bar.setPosition(bounds.left, bounds.top);
-            bar.setFillColor(Theme::Cyan);
+            bar.setFillColor(Theme::Orange);
             window.draw(bar);
         }
 
         sf::Color textCol;
         if (!item.enabled) {
-            textCol = Theme::TextMuted;
+            textCol = Theme::TextSecondary;
         } else if (isSelected) {
-            textCol = Theme::Cyan;
+            textCol = Theme::Orange;
         } else {
-            textCol = Theme::Text;
+            textCol = Theme::TextPrimary;
         }
 
         // Draw item label

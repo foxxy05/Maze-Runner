@@ -94,7 +94,7 @@ private:
     void finishGeneratedRound();
     void rebuildMazeTexture();
     void buildRadialGradient();
-    void renderFog(PlayerRole role, const Player& runner, const Hunter& hunter, bool twoPlayer);
+    void renderFog(PlayerRole role, const Player& runner, const Hunter& hunter);
     void renderExitPortal(float pulse);
     void spawnPowerUps(bool twoPlayer);
     void updatePowerUps(float dt, bool twoPlayer);

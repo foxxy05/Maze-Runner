@@ -89,13 +89,13 @@ Game::Game(unsigned int seed)
 
 void Game::buildRadialGradient() {
     const unsigned int size = cfg::RADIAL_GRADIENT_SIZE;
-    sf::Image image; image.create(size, size, sf::Color::Transparent);
+    sf::Image image; image.create(size, size, Theme::Transparent);
     for (unsigned int y = 0; y < size; ++y) for (unsigned int x = 0; x < size; ++x) {
         float dx = (static_cast<float>(x) / (size - 1)) * 2.0f - 1.0f;
         float dy = (static_cast<float>(y) / (size - 1)) * 2.0f - 1.0f;
         float edge = std::min(1.0f, std::sqrt(dx * dx + dy * dy));
         sf::Uint8 alpha = static_cast<sf::Uint8>(edge * edge * 190.0f);
-        image.setPixel(x, y, sf::Color(255, 255, 255, alpha));
+        image.setPixel(x, y, Theme::withAlpha(Theme::GradientMask, alpha));
     }
     radialGradientTexture_.loadFromImage(image);
     radialGradientSprite_.setTexture(radialGradientTexture_);
@@ -111,16 +111,16 @@ void Game::rebuildMazeTexture() {
         sf::RectangleShape tile({static_cast<float>(cfg::TILE_SIZE), static_cast<float>(cfg::TILE_SIZE)});
         tile.setPosition(pos);
         if (maze_.isWall(r,c)) {
-            tile.setFillColor(Theme::WallBase); mazeTexture_.draw(tile);
+            tile.setFillColor(Theme::Wall); mazeTexture_.draw(tile);
             const int dr[4] = {-1, 1, 0, 0}, dc[4] = {0, 0, -1, 1};
             for (int side = 0; side < 4; ++side) if (!maze_.isWall(r + dr[side], c + dc[side])) {
-                sf::RectangleShape edge({side < 2 ? static_cast<float>(cfg::TILE_SIZE) : 2.0f, side < 2 ? 2.0f : static_cast<float>(cfg::TILE_SIZE)});
-                edge.setPosition(pos.x + (side == 3 ? cfg::TILE_SIZE - 2.0f : 0.0f), pos.y + (side == 1 ? cfg::TILE_SIZE - 2.0f : 0.0f));
-                edge.setFillColor(sf::Color(0, 220, 255, 125)); mazeTexture_.draw(edge);
+                sf::RectangleShape edge({side < 2 ? static_cast<float>(cfg::TILE_SIZE) : 1.0f, side < 2 ? 1.0f : static_cast<float>(cfg::TILE_SIZE)});
+                edge.setPosition(pos.x + (side == 3 ? cfg::TILE_SIZE - 1.0f : 0.0f), pos.y + (side == 1 ? cfg::TILE_SIZE - 1.0f : 0.0f));
+                edge.setFillColor(Theme::WallEdge); mazeTexture_.draw(edge);
             }
         } else {
-            tile.setFillColor(Theme::PathBase); mazeTexture_.draw(tile);
-            sf::Vertex grid[] = {sf::Vertex(pos, sf::Color(35, 60, 85, 35)), sf::Vertex({pos.x + cfg::TILE_SIZE, pos.y}, sf::Color(35,60,85,35))};
+            tile.setFillColor(Theme::Floor); mazeTexture_.draw(tile);
+            sf::Vertex grid[] = {sf::Vertex(pos, Theme::GridLine), sf::Vertex({pos.x + cfg::TILE_SIZE, pos.y}, Theme::GridLine)};
             mazeTexture_.draw(grid, 2, sf::Lines);
         }
     }
@@ -203,8 +203,7 @@ void Game::finishGeneratedRound() {
 
     player_ = Player(maze_.startRow(), maze_.startCol(), cfg::TILE_SIZE, cfg::TILE_SIZE);
     player_.resetDiscovery(cfg::MAZE_ROWS, cfg::MAZE_COLS);
-    int levelFog = std::max(2, cfg::FOG_VISION_RADIUS - (level_ >= 4) - (level_ >= 7));
-    player_.discoverAround(maze_, levelFog, cfg::FOG_LIGHT_CONE_EXTRA);
+    player_.discoverAround(maze_, cfg::TWO_P_RUNNER_LOS_RADIUS, 0);
 
     hunter_ = Hunter(hunterSpawn.first, hunterSpawn.second, cfg::TILE_SIZE, cfg::TILE_SIZE, cfg::HUNTER_CELLS_PER_SEC);
     hunter_.setCellsPerSec(std::min(cfg::PLAYER_CELLS_PER_SEC * 1.05f, cfg::HUNTER_CELLS_PER_SEC * (1.0f + 0.05f * (level_ - 1))));
@@ -545,8 +544,7 @@ void Game::update(float dt) {
 
     if (playerCanMove) {
         player_.update(dt, inputDr, inputDc, maze_);
-        int levelFog = std::max(2, cfg::FOG_VISION_RADIUS - (level_ >= 4) - (level_ >= 7));
-        player_.discoverAround(maze_, levelFog, cfg::FOG_LIGHT_CONE_EXTRA);
+        player_.discoverAround(maze_, cfg::TWO_P_RUNNER_LOS_RADIUS, 0);
 
     }
 
@@ -804,9 +802,9 @@ void Game::render() {
     } else if (state_ == GameState::LevelCleared) {
         window_.setView(window_.getDefaultView());
         UI::drawAnimatedBackground(window_, menuTime_);
-        UI::drawText(window_, fontOrbitron_, "LEVEL CLEARED", {640, 220}, 48, Theme::Green, true);
-        UI::drawText(window_, fontRajdhaniBold_, "LEVEL " + std::to_string(level_) + "   RUN SCORE " + std::to_string(runScore_), {640, 295}, 26, Theme::Text, true);
-        UI::drawText(window_, fontRajdhaniMedium_, "ENTER / SPACE: NEXT LEVEL", {640, 380}, 20, Theme::Cyan, true);
+        UI::drawText(window_, fontOrbitron_, "LEVEL CLEARED", {640, 220}, 48, Theme::ExitGold, true);
+        UI::drawText(window_, fontRajdhaniBold_, "LEVEL " + std::to_string(level_) + "   RUN SCORE " + std::to_string(runScore_), {640, 295}, 26, Theme::TextPrimary, true);
+        UI::drawText(window_, fontRajdhaniMedium_, "ENTER / SPACE: NEXT LEVEL", {640, 380}, 20, Theme::Orange, true);
     } else if (state_ == GameState::TwoPlayerIntermission) {
         window_.setView(window_.getDefaultView());
         renderTwoPlayerIntermission();
@@ -849,7 +847,7 @@ void Game::drawPlayerView(const sf::FloatRect& rect, PlayerRole role, const Play
     float pulse = (std::sin(pulseTime_ * cfg::PULSE_SPEED) + 1.0f) * 0.5f;
     if (mazeTextureReady_) window_.draw(mazeSprite_);
     renderExitPortal(pulse);
-    if (!isPreview) renderFog(role, runner, hunter, twoPlayer);
+    if (!isPreview) renderFog(role, runner, hunter);
     renderPowerUps();
 
     bool runnerVisible = isPreview || role == PlayerRole::Runner;
@@ -865,7 +863,7 @@ void Game::drawPlayerView(const sf::FloatRect& rect, PlayerRole role, const Play
     if (runnerVisible) {
         sf::Vector2f center(runner.posX() + cfg::TILE_SIZE / 2.0f, runner.posY() + cfg::TILE_SIZE / 2.0f);
         drawAnimatedPlayer(window_, center, runner.facingDr(), runner.facingDc(),
-                           runner.animFrame(), runner.isMoving(), pulse);
+                           runner.animFrame(), runner.isMoving());
     }
 
     bool hunterVisible = isPreview || role == PlayerRole::Hunter;
@@ -887,14 +885,15 @@ void Game::drawPlayerView(const sf::FloatRect& rect, PlayerRole role, const Play
                                       view.getCenter().y - view.getSize().y / 2.0f);
     radialGradientSprite_.setScale(view.getSize().x / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE),
                                    view.getSize().y / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE));
+    float proximity = 0.0f;
     if (!lowFx_) {
         float dx = runner.posX() - hunter.posX(), dy = runner.posY() - hunter.posY();
-        float proximity = std::max(0.0f, 1.0f - std::sqrt(dx * dx + dy * dy) /
-                                   (cfg::DANGER_DISTANCE_TILES * cfg::TILE_SIZE));
-        radialGradientSprite_.setColor(sf::Color(255, 35, 65, static_cast<sf::Uint8>(proximity * 180)));
-        window_.draw(radialGradientSprite_);
+        proximity = std::max(0.0f, 1.0f - std::sqrt(dx * dx + dy * dy) /
+                                      (cfg::DANGER_DISTANCE_TILES * cfg::TILE_SIZE));
     }
-    radialGradientSprite_.setColor(sf::Color::White);
+    const sf::Color vignetteTint = Theme::mix(Theme::VignetteBlack, Theme::Red, proximity * 0.22f);
+    radialGradientSprite_.setColor(Theme::withAlpha(vignetteTint,
+        static_cast<sf::Uint8>(lowFx_ ? 80 : 80 + proximity * 100)));
     window_.draw(radialGradientSprite_);
 
     if (!twoPlayer && showBfsDemo_) renderBfsDemo();
@@ -903,11 +902,10 @@ void Game::drawPlayerView(const sf::FloatRect& rect, PlayerRole role, const Play
     drawPlayerHud(rect, role, runner, hunter, isPreview, twoPlayer, playerNumber);
 }
 
-void Game::renderFog(PlayerRole role, const Player& runner, const Hunter& hunter, bool twoPlayer) {
+void Game::renderFog(PlayerRole role, const Player& runner, const Hunter& hunter) {
     sf::VertexArray fog(sf::Quads, cfg::MAZE_ROWS * cfg::MAZE_COLS * 4);
     const float maxDistance = static_cast<float>(role == PlayerRole::Runner
-        ? (twoPlayer ? cfg::TWO_P_RUNNER_LOS_RADIUS : cfg::FOG_VISION_RADIUS + cfg::FOG_LIGHT_CONE_EXTRA)
-        : cfg::TWO_P_HUNTER_LOS_RADIUS);
+        ? cfg::TWO_P_RUNNER_LOS_RADIUS : cfg::TWO_P_HUNTER_LOS_RADIUS);
     const int viewerRow = role == PlayerRole::Runner ? runner.gridRow() : hunter.gridRow();
     const int viewerCol = role == PlayerRole::Runner ? runner.gridCol() : hunter.gridCol();
     std::size_t index = 0;
@@ -920,7 +918,7 @@ void Game::renderFog(PlayerRole role, const Player& runner, const Hunter& hunter
             float dr = static_cast<float>(r - viewerRow), dc = static_cast<float>(c - viewerCol);
             alpha = static_cast<int>(std::min(145.0f, 18.0f + 125.0f * std::sqrt(dr*dr + dc*dc) / maxDistance));
         }
-        sf::Color color(4, 8, 17, static_cast<sf::Uint8>(alpha));
+        const sf::Color color = Theme::withAlpha(Theme::FogDark, static_cast<sf::Uint8>(alpha));
         float x = c * cfg::TILE_SIZE, y = r * cfg::TILE_SIZE, s = cfg::TILE_SIZE;
         fog[index++] = sf::Vertex({x,y}, color); fog[index++] = sf::Vertex({x+s,y}, color);
         fog[index++] = sf::Vertex({x+s,y+s}, color); fog[index++] = sf::Vertex({x,y+s}, color);
@@ -932,10 +930,10 @@ void Game::renderExitPortal(float pulse) {
     sf::Vector2f center((maze_.exitCol() + 0.5f) * cfg::TILE_SIZE, (maze_.exitRow() + 0.5f) * cfg::TILE_SIZE);
     for (int ring = 0; ring < 2; ++ring) {
         sf::CircleShape shape(11.0f + ring * 4.0f, 32); shape.setOrigin(shape.getRadius(), shape.getRadius()); shape.setPosition(center);
-        shape.setFillColor(sf::Color::Transparent); shape.setOutlineThickness(1.5f); shape.setOutlineColor(sf::Color(0, 255, 135, static_cast<sf::Uint8>(130 + pulse * 100)));
+        shape.setFillColor(Theme::Transparent); shape.setOutlineThickness(1.5f); shape.setOutlineColor(Theme::withAlpha(Theme::ExitGold, static_cast<sf::Uint8>(130 + pulse * 100)));
         shape.setRotation((ring ? -1.0f : 1.0f) * pulseTime_ * cfg::PORTAL_ROTATION_SPEED); window_.draw(shape);
     }
-    sf::CircleShape core(5.0f + pulse * 3.0f); core.setOrigin(core.getRadius(), core.getRadius()); core.setPosition(center); core.setFillColor(sf::Color(0,255,135,180)); window_.draw(core);
+    sf::CircleShape core(5.0f + pulse * 3.0f); core.setOrigin(core.getRadius(), core.getRadius()); core.setPosition(center); core.setFillColor(Theme::ExitGold); window_.draw(core);
 }
 
 void Game::spawnPowerUps(bool twoPlayer) {
@@ -989,8 +987,18 @@ void Game::updatePowerUps(float dt, bool twoPlayer) {
 
 void Game::renderPowerUps() {
     for (const auto& pickup : powerUps_) if (pickup.respawn <= 0.0f) {
-        sf::CircleShape icon(6.0f); icon.setOrigin(6,6); icon.setPosition((pickup.col+.5f)*cfg::TILE_SIZE, (pickup.row+.5f)*cfg::TILE_SIZE);
-        icon.setFillColor(pickup.type == PowerUpType::Surge ? Theme::Cyan : pickup.type == PowerUpType::Dash ? Theme::Crimson : Theme::Amber); window_.draw(icon);
+        sf::CircleShape ring(8.0f);
+        ring.setOrigin(8.0f, 8.0f);
+        ring.setPosition((pickup.col + 0.5f) * cfg::TILE_SIZE, (pickup.row + 0.5f) * cfg::TILE_SIZE);
+        ring.setFillColor(Theme::Transparent);
+        ring.setOutlineThickness(2.0f);
+        ring.setOutlineColor(Theme::Bone);
+        window_.draw(ring);
+        sf::CircleShape core(4.0f);
+        core.setOrigin(4.0f, 4.0f);
+        core.setPosition(ring.getPosition());
+        core.setFillColor(Theme::Orange);
+        window_.draw(core);
     }
 }
 
@@ -1012,26 +1020,26 @@ void Game::renderTwoPlayer() {
     window_.setView(window_.getDefaultView());
     UI::drawPanel(window_, {cfg::WINDOW_WIDTH / 2.0f - cfg::TWO_P_DIVIDER_WIDTH / 2.0f, 0.0f,
                             cfg::TWO_P_DIVIDER_WIDTH, static_cast<float>(cfg::WINDOW_HEIGHT)},
-                  Theme::Panel, Theme::PanelOutline, 1.0f);
+                  Theme::Panel, Theme::PanelBorder, 1.0f);
 }
 
 void Game::renderTwoPlayerIntermission() {
     UI::drawAnimatedBackground(window_, menuTime_);
 
     UI::drawText(window_, fontOrbitron_, "ROUND 1 FINISHED",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 130.0f), 46, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 130.0f), 46, Theme::Orange, true);
 
     std::string outcomeStr;
     sf::Color outcomeCol;
     if (round1Data_.outcome == RoundOutcome::Escape) {
         outcomeStr = "P1 (RUNNER) ESCAPED THE MAZE!";
-        outcomeCol = Theme::Green;
+        outcomeCol = Theme::ExitGold;
     } else if (round1Data_.outcome == RoundOutcome::Caught) {
         outcomeStr = "P2 (HUNTER) CAUGHT P1!";
-        outcomeCol = Theme::Crimson;
+        outcomeCol = Theme::Red;
     } else {
         outcomeStr = "TIME LIMIT EXPIRED (90s)!";
-        outcomeCol = Theme::Amber;
+        outcomeCol = Theme::ExitGold;
     }
 
     UI::drawText(window_, fontOrbitron_, outcomeStr,
@@ -1039,61 +1047,61 @@ void Game::renderTwoPlayerIntermission() {
 
     // Score Board Card
     UI::drawPanel(window_, sf::FloatRect(340.0f, 240.0f, 600.0f, 220.0f),
-                 Theme::Panel, Theme::PanelOutline, 2.0f);
+                 Theme::Panel, Theme::PanelBorder, 2.0f);
 
     std::ostringstream ssR1P1, ssR1P2, ssTime;
     ssR1P1 << "Player 1 (Runner): " << round1Data_.p1Score << " pts";
     ssR1P2 << "Player 2 (Hunter): " << round1Data_.p2Score << " pts";
     ssTime << "Round Duration: " << std::fixed << std::setprecision(1) << round1Data_.time << "s";
 
-    UI::drawText(window_, fontRajdhaniBold_, ssR1P1.str(), sf::Vector2f(380.0f, 270.0f), 24, Theme::Cyan);
-    UI::drawText(window_, fontRajdhaniBold_, ssR1P2.str(), sf::Vector2f(380.0f, 315.0f), 24, Theme::Crimson);
-    UI::drawText(window_, fontRajdhaniMedium_, ssTime.str(), sf::Vector2f(380.0f, 360.0f), 20, Theme::TextDim);
+    UI::drawText(window_, fontRajdhaniBold_, ssR1P1.str(), sf::Vector2f(380.0f, 270.0f), 24, Theme::Orange);
+    UI::drawText(window_, fontRajdhaniBold_, ssR1P2.str(), sf::Vector2f(380.0f, 315.0f), 24, Theme::Red);
+    UI::drawText(window_, fontRajdhaniMedium_, ssTime.str(), sf::Vector2f(380.0f, 360.0f), 20, Theme::TextSecondary);
 
     // Swap Announcement
     UI::drawPanel(window_, sf::FloatRect(320.0f, 490.0f, 640.0f, 110.0f),
-                 sf::Color(18, 28, 48, 240), Theme::Cyan, 2.0f);
+                 Theme::withAlpha(Theme::Panel, 240), Theme::Orange, 2.0f);
 
     UI::drawText(window_, fontOrbitron_, "P1 is now HUNTER, P2 is now RUNNER",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 525.0f), 22, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 525.0f), 22, Theme::Orange, true);
 
     UI::drawText(window_, fontRajdhaniMedium_, "Controls stay bound: P1 (WASD)  |  P2 (Arrows). Same maze seed.",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 565.0f), 18, Theme::TextDim, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 565.0f), 18, Theme::TextSecondary, true);
 
     UI::drawText(window_, fontRajdhaniBold_, "Press ENTER or SPACE to start Round 2  |  ESC to Menu",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 650.0f), 20, Theme::Green, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 650.0f), 20, Theme::ExitGold, true);
 }
 
 void Game::renderTwoPlayerMatchOver() {
     UI::drawAnimatedBackground(window_, menuTime_);
 
     UI::drawText(window_, fontOrbitron_, "MATCH COMPLETED",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 90.0f), 48, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 90.0f), 48, Theme::Orange, true);
 
     int p1Total = round1Data_.p1Score + round2Data_.p1Score;
     int p2Total = round1Data_.p2Score + round2Data_.p2Score;
 
     std::string winnerText;
-    sf::Color winnerColor = Theme::Cyan;
+    sf::Color winnerColor = Theme::Orange;
     if (p1Total > p2Total) {
         winnerText = "PLAYER 1 WINS THE MATCH!";
-        winnerColor = Theme::Cyan;
+        winnerColor = Theme::Orange;
     } else if (p2Total > p1Total) {
         winnerText = "PLAYER 2 WINS THE MATCH!";
-        winnerColor = Theme::Crimson;
+        winnerColor = Theme::Red;
     } else {
         // Tie breaker: faster escape time
         float t1 = round1Data_.p1EscapeTime;
         float t2 = round2Data_.p2EscapeTime;
         if (t1 > 0.0f && (t2 < 0.0f || t1 < t2)) {
             winnerText = "PLAYER 1 WINS! (Tie-breaker: Faster Escape)";
-            winnerColor = Theme::Cyan;
+            winnerColor = Theme::Orange;
         } else if (t2 > 0.0f && (t1 < 0.0f || t2 < t1)) {
             winnerText = "PLAYER 2 WINS! (Tie-breaker: Faster Escape)";
-            winnerColor = Theme::Crimson;
+            winnerColor = Theme::Red;
         } else {
             winnerText = "THE MATCH IS A TIE!";
-            winnerColor = Theme::Amber;
+            winnerColor = Theme::ExitGold;
         }
     }
 
@@ -1102,18 +1110,18 @@ void Game::renderTwoPlayerMatchOver() {
 
     // Breakdown Panel
     UI::drawPanel(window_, sf::FloatRect(280.0f, 200.0f, 720.0f, 260.0f),
-                 Theme::Panel, Theme::PanelOutline, 2.0f);
+                 Theme::Panel, Theme::PanelBorder, 2.0f);
 
     std::ostringstream ssR1, ssR2, ssTotals;
     ssR1 << "ROUND 1: P1 (Runner) " << round1Data_.p1Score << " pts  |  P2 (Hunter) " << round1Data_.p2Score << " pts";
     ssR2 << "ROUND 2: P1 (Hunter) " << round2Data_.p1Score << " pts  |  P2 (Runner) " << round2Data_.p2Score << " pts";
     ssTotals << "FINAL TOTALS ->  P1: " << p1Total << " pts   |   P2: " << p2Total << " pts";
 
-    UI::drawText(window_, fontRajdhaniBold_, ssR1.str(), sf::Vector2f(320.0f, 240.0f), 22, Theme::Text);
-    UI::drawText(window_, fontRajdhaniBold_, ssR2.str(), sf::Vector2f(320.0f, 295.0f), 22, Theme::Text);
+    UI::drawText(window_, fontRajdhaniBold_, ssR1.str(), sf::Vector2f(320.0f, 240.0f), 22, Theme::TextPrimary);
+    UI::drawText(window_, fontRajdhaniBold_, ssR2.str(), sf::Vector2f(320.0f, 295.0f), 22, Theme::TextPrimary);
 
     // Separator
-    UI::drawPanel(window_, sf::FloatRect(320.0f, 350.0f, 640.0f, 2.0f), Theme::PanelOutline);
+    UI::drawPanel(window_, sf::FloatRect(320.0f, 350.0f, 640.0f, 2.0f), Theme::PanelBorder);
     UI::drawText(window_, fontOrbitron_, ssTotals.str(), sf::Vector2f(320.0f, 385.0f), 22, winnerColor);
 
     twoPlayerMatchOverMenu_.draw(window_, fontRajdhaniBold_, fontRajdhaniMedium_,
@@ -1123,19 +1131,19 @@ void Game::renderTwoPlayerMatchOver() {
 void Game::renderControlsTestOverlay() {
     // Dim overlay
     UI::drawPanel(window_, sf::FloatRect(0.0f, 0.0f, static_cast<float>(cfg::WINDOW_WIDTH), static_cast<float>(cfg::WINDOW_HEIGHT)),
-                 sf::Color(7, 10, 18, 245));
+                 Theme::withAlpha(Theme::Background, 245));
 
     UI::drawText(window_, fontOrbitron_, "CONTROLS & KEYBOARD GHOSTING TEST",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 80.0f), 32, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 80.0f), 32, Theme::Orange, true);
 
     UI::drawText(window_, fontRajdhaniMedium_, "Verify that multiple keys register simultaneously without laptop hardware ghosting.",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 125.0f), 18, Theme::TextDim, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 125.0f), 18, Theme::TextSecondary, true);
 
     auto drawKeyBox = [&](float x, float y, const std::string& label, bool isDown, sf::Color activeCol) {
         sf::FloatRect box(x - 28.0f, y - 28.0f, 56.0f, 56.0f);
         sf::Color bg = isDown ? activeCol : Theme::Panel;
-        sf::Color border = isDown ? sf::Color::White : Theme::PanelOutline;
-        sf::Color textCol = isDown ? sf::Color(10, 15, 25) : Theme::Text;
+        sf::Color border = isDown ? Theme::Bone : Theme::PanelBorder;
+        sf::Color textCol = isDown ? Theme::Background : Theme::TextPrimary;
 
         UI::drawPanel(window_, box, bg, border, isDown ? 2.5f : 1.5f);
         UI::drawText(window_, fontOrbitron_, label, sf::Vector2f(x, y), 22, textCol, true);
@@ -1144,50 +1152,50 @@ void Game::renderControlsTestOverlay() {
     // 1. Player 1 Panel (WASD)
     float p1CenterX = 360.0f;
     UI::drawPanel(window_, sf::FloatRect(p1CenterX - 220.0f, 170.0f, 440.0f, 370.0f),
-                 Theme::Panel, Theme::Cyan, 2.0f);
+                 Theme::Panel, Theme::Orange, 2.0f);
 
-    UI::drawText(window_, fontOrbitron_, "PLAYER 1: WASD", sf::Vector2f(p1CenterX, 205.0f), 22, Theme::Cyan, true);
+    UI::drawText(window_, fontOrbitron_, "PLAYER 1: WASD", sf::Vector2f(p1CenterX, 205.0f), 22, Theme::Orange, true);
 
     bool wDown = wasdInput_.isKeyUpDown();
     bool aDown = wasdInput_.isKeyLeftDown();
     bool sDown = wasdInput_.isKeyDownDown();
     bool dDown = wasdInput_.isKeyRightDown();
 
-    drawKeyBox(p1CenterX, 290.0f, "W", wDown, Theme::Cyan);
-    drawKeyBox(p1CenterX - 68.0f, 360.0f, "A", aDown, Theme::Cyan);
-    drawKeyBox(p1CenterX, 360.0f, "S", sDown, Theme::Cyan);
-    drawKeyBox(p1CenterX + 68.0f, 360.0f, "D", dDown, Theme::Cyan);
+    drawKeyBox(p1CenterX, 290.0f, "W", wDown, Theme::Orange);
+    drawKeyBox(p1CenterX - 68.0f, 360.0f, "A", aDown, Theme::Orange);
+    drawKeyBox(p1CenterX, 360.0f, "S", sDown, Theme::Orange);
+    drawKeyBox(p1CenterX + 68.0f, 360.0f, "D", dDown, Theme::Orange);
 
     std::string p1DirStr = "Resolved: " + wasdInput_.directionString();
-    UI::drawText(window_, fontRajdhaniBold_, p1DirStr, sf::Vector2f(p1CenterX, 445.0f), 22, Theme::Text, true);
+    UI::drawText(window_, fontRajdhaniBold_, p1DirStr, sf::Vector2f(p1CenterX, 445.0f), 22, Theme::TextPrimary, true);
 
     std::ostringstream ssP1Held;
     ssP1Held << "Held Keys: " << wasdInput_.heldKeyCount();
-    UI::drawText(window_, fontRajdhaniMedium_, ssP1Held.str(), sf::Vector2f(p1CenterX, 485.0f), 18, Theme::TextDim, true);
+    UI::drawText(window_, fontRajdhaniMedium_, ssP1Held.str(), sf::Vector2f(p1CenterX, 485.0f), 18, Theme::TextSecondary, true);
 
     // 2. Player 2 Panel (Arrows)
     float p2CenterX = 920.0f;
     UI::drawPanel(window_, sf::FloatRect(p2CenterX - 220.0f, 170.0f, 440.0f, 370.0f),
-                 Theme::Panel, Theme::Crimson, 2.0f);
+                 Theme::Panel, Theme::Red, 2.0f);
 
-    UI::drawText(window_, fontOrbitron_, "PLAYER 2: ARROWS", sf::Vector2f(p2CenterX, 205.0f), 22, Theme::Crimson, true);
+    UI::drawText(window_, fontOrbitron_, "PLAYER 2: ARROWS", sf::Vector2f(p2CenterX, 205.0f), 22, Theme::Red, true);
 
     bool upDown = arrowInput_.isKeyUpDown();
     bool leftDown = arrowInput_.isKeyLeftDown();
     bool downDown = arrowInput_.isKeyDownDown();
     bool rightDown = arrowInput_.isKeyRightDown();
 
-    drawKeyBox(p2CenterX, 290.0f, "^", upDown, Theme::Crimson);
-    drawKeyBox(p2CenterX - 68.0f, 360.0f, "<", leftDown, Theme::Crimson);
-    drawKeyBox(p2CenterX, 360.0f, "v", downDown, Theme::Crimson);
-    drawKeyBox(p2CenterX + 68.0f, 360.0f, ">", rightDown, Theme::Crimson);
+    drawKeyBox(p2CenterX, 290.0f, "^", upDown, Theme::Red);
+    drawKeyBox(p2CenterX - 68.0f, 360.0f, "<", leftDown, Theme::Red);
+    drawKeyBox(p2CenterX, 360.0f, "v", downDown, Theme::Red);
+    drawKeyBox(p2CenterX + 68.0f, 360.0f, ">", rightDown, Theme::Red);
 
     std::string p2DirStr = "Resolved: " + arrowInput_.directionString();
-    UI::drawText(window_, fontRajdhaniBold_, p2DirStr, sf::Vector2f(p2CenterX, 445.0f), 22, Theme::Text, true);
+    UI::drawText(window_, fontRajdhaniBold_, p2DirStr, sf::Vector2f(p2CenterX, 445.0f), 22, Theme::TextPrimary, true);
 
     std::ostringstream ssP2Held;
     ssP2Held << "Held Keys: " << arrowInput_.heldKeyCount();
-    UI::drawText(window_, fontRajdhaniMedium_, ssP2Held.str(), sf::Vector2f(p2CenterX, 485.0f), 18, Theme::TextDim, true);
+    UI::drawText(window_, fontRajdhaniMedium_, ssP2Held.str(), sf::Vector2f(p2CenterX, 485.0f), 18, Theme::TextSecondary, true);
 
     // 3. Simultaneous Status Bar
     bool bothActive = (!wasdInput_.currentDirection().isZero() && !arrowInput_.currentDirection().isZero());
@@ -1195,13 +1203,13 @@ void Game::renderControlsTestOverlay() {
     sf::Color simColor;
     if (bothActive) {
         simStatus = "SIMULTANEOUS DUAL INPUT ACTIVE - NO HARDWARE GHOSTING DETECTED";
-        simColor = Theme::Green;
+        simColor = Theme::ExitGold;
     } else if (!wasdInput_.currentDirection().isZero() || !arrowInput_.currentDirection().isZero()) {
         simStatus = "Single input active. Press WASD and Arrow Keys simultaneously to verify dual registration.";
-        simColor = Theme::Amber;
+        simColor = Theme::ExitGold;
     } else {
         simStatus = "Waiting for keypresses. Press keys on both sides simultaneously.";
-        simColor = Theme::TextDim;
+        simColor = Theme::TextSecondary;
     }
 
     UI::drawPanel(window_, sf::FloatRect(200.0f, 570.0f, 880.0f, 48.0f),
@@ -1210,7 +1218,7 @@ void Game::renderControlsTestOverlay() {
                  sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 594.0f), 19, simColor, true);
 
     UI::drawText(window_, fontRajdhaniBold_, "Press F1 or ESC to close Controls Test",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 665.0f), 18, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 665.0f), 18, Theme::Orange, true);
 }
 
 void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Player& runner,
@@ -1218,10 +1226,10 @@ void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Playe
     constexpr float padding = 16.0f;
     const float right = rect.left + rect.width;
     const float bottom = rect.top + rect.height;
-    const sf::Color roleColor = role == PlayerRole::Runner ? Theme::Cyan : Theme::Crimson;
+    const sf::Color roleColor = role == PlayerRole::Runner ? Theme::Orange : Theme::Red;
     const std::string roleName = role == PlayerRole::Runner ? "RUNNER" : "HUNTER";
     UI::drawPanel(window_, {rect.left, rect.top, rect.width, 48.0f},
-                  sf::Color(14, 20, 34, 235), Theme::PanelOutline, 1.5f);
+                  Theme::withAlpha(Theme::Panel, 235), Theme::PanelBorder, 1.5f);
     const std::string roleLabel = (twoPlayer
         ? "P" + std::to_string(playerNumber) + " " + roleName + (playerNumber == 1 ? " WASD" : " ARROWS")
         : roleName);
@@ -1236,20 +1244,20 @@ void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Playe
         timer << "TIME " << std::fixed << std::setprecision(1) << roundElapsed_ << "s  |  STEPS " << runner.steps();
     }
     UI::drawText(window_, fontRajdhaniBold_, timer.str(),
-                 {rect.left + rect.width * 0.50f, rect.top + 15.0f}, 18, Theme::Text, true);
+                 {rect.left + rect.width * 0.50f, rect.top + 15.0f}, 18, Theme::TextPrimary, true);
 
     std::string status;
-    sf::Color statusColor = Theme::TextDim;
+    sf::Color statusColor = Theme::TextSecondary;
     if (role == PlayerRole::Hunter) {
         float releaseAt = twoPlayer ? cfg::MOVEMENT_FREEZE_TIME + cfg::TWO_P_HUNTER_RELEASE
                                     : std::max(5.0f, cfg::HUNTER_WAKE_TIME - static_cast<float>(level_ - 1));
         if (roundElapsed_ < releaseAt) {
             std::ostringstream value;
             value << "WAKES " << std::fixed << std::setprecision(1) << releaseAt - roundElapsed_ << "s";
-            status = value.str(); statusColor = Theme::Amber;
-        } else { status = "HUNTING"; statusColor = Theme::Crimson; }
+            status = value.str(); statusColor = Theme::ExitGold;
+        } else { status = "HUNTING"; statusColor = Theme::Red; }
     } else if (twoPlayer) {
-        status = "FIND THE EXIT"; statusColor = Theme::Green;
+        status = "FIND THE EXIT"; statusColor = Theme::ExitGold;
     } else {
         status = "SEED " + std::to_string(maze_.seed());
     }
@@ -1263,23 +1271,23 @@ void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Playe
     const float slotX = rect.left + padding;
     const float slotY = bottom - 54.0f;
     UI::drawPanel(window_, {slotX, slotY, 150.0f, 38.0f}, Theme::Panel,
-                  powerTime > 0.0f ? roleColor : Theme::PanelOutline, 2.0f);
+                  powerTime > 0.0f ? roleColor : Theme::PanelBorder, 2.0f);
     UI::drawText(window_, fontRajdhaniBold_, powerName + " [" + activation + "]",
-                 {slotX + 10.0f, slotY + 10.0f}, 15, powerTime > 0.0f ? roleColor : Theme::TextDim);
+                 {slotX + 10.0f, slotY + 10.0f}, 15, powerTime > 0.0f ? roleColor : Theme::TextSecondary);
 
     UI::drawText(window_, fontRajdhaniMedium_, lowFx_ ? "F2 LOW FX" : "F2 FX HIGH",
-                 {slotX, slotY - 23.0f}, 14, lowFx_ ? Theme::Amber : Theme::TextMuted);
+                 {slotX, slotY - 23.0f}, 14, lowFx_ ? Theme::ExitGold : Theme::TextSecondary);
     if (showFps_) UI::drawText(window_, fontRajdhaniBold_, "FPS " + std::to_string(static_cast<int>(fpsAverage_)),
-                              {slotX + 100.0f, slotY - 23.0f}, 14, Theme::Green);
+                              {slotX + 100.0f, slotY - 23.0f}, 14, Theme::ExitGold);
     if (toastTime_ > 0.0f) UI::drawText(window_, fontRajdhaniBold_, lowFx_ ? "LOW FX ENABLED" : "FX MODE CHANGED",
-                                        {rect.left + rect.width * 0.5f, rect.top + 62.0f}, 15, Theme::Amber, true);
+                                        {rect.left + rect.width * 0.5f, rect.top + 62.0f}, 15, Theme::ExitGold, true);
 
     const float mapSize = cfg::MINIMAP_SIZE;
     const float mapX = right - mapSize - cfg::MINIMAP_PADDING;
     const float mapY = bottom - mapSize - cfg::MINIMAP_PADDING;
     UI::drawPanel(window_, {mapX - 4.0f, mapY - 4.0f, mapSize + 8.0f, mapSize + 8.0f},
-                  Theme::Panel, Theme::PanelOutline, 2.0f);
-    UI::drawText(window_, fontRajdhaniBold_, "MINIMAP", {mapX, mapY - 20.0f}, 14, Theme::TextMuted);
+                  Theme::Panel, Theme::PanelBorder, 2.0f);
+    UI::drawText(window_, fontRajdhaniBold_, "MINIMAP", {mapX, mapY - 20.0f}, 14, Theme::TextSecondary);
     const float cellW = mapSize / static_cast<float>(cfg::MAZE_COLS);
     const float cellH = mapSize / static_cast<float>(cfg::MAZE_ROWS);
     const int viewerRow = role == PlayerRole::Runner ? runner.gridRow() : hunter.gridRow();
@@ -1291,13 +1299,13 @@ void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Playe
         if (!isPreview && !discovered(r, c)) continue;
         sf::RectangleShape tile({cellW, cellH});
         tile.setPosition(mapX + c * cellW, mapY + r * cellH);
-        tile.setFillColor(maze_.isWall(r, c) ? sf::Color(25, 35, 55) : sf::Color(10, 15, 26));
+        tile.setFillColor(maze_.isWall(r, c) ? Theme::Wall : Theme::Floor);
         window_.draw(tile);
     }
     if (isPreview || discovered(maze_.exitRow(), maze_.exitCol())) {
         sf::RectangleShape exit({cellW * 1.6f, cellH * 1.6f});
         exit.setPosition(mapX + maze_.exitCol() * cellW, mapY + maze_.exitRow() * cellH);
-        exit.setFillColor(Theme::Green); window_.draw(exit);
+        exit.setFillColor(Theme::ExitGold); window_.draw(exit);
     }
     sf::CircleShape marker(cellW * 0.9f);
     marker.setOrigin(cellW * 0.9f, cellW * 0.9f);
@@ -1324,7 +1332,7 @@ void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Playe
     }
     if (opponentVisible) {
         marker.setPosition(mapX + (opponentCol + 0.5f) * cellW, mapY + (opponentRow + 0.5f) * cellH);
-        marker.setFillColor(role == PlayerRole::Runner ? Theme::Crimson : Theme::Cyan);
+        marker.setFillColor(role == PlayerRole::Runner ? Theme::Red : Theme::Orange);
         window_.draw(marker);
     }
 
@@ -1332,15 +1340,15 @@ void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Playe
         const float previewLeft = std::max(0.0f, cfg::MAP_PREVIEW_DURATION - roundElapsed_);
         if (previewLeft > 0.0f) {
             const bool unlocked = roundElapsed_ >= cfg::MOVEMENT_FREEZE_TIME;
-            const sf::Color accent = unlocked ? Theme::Green : Theme::Cyan;
+            const sf::Color accent = unlocked ? Theme::ExitGold : Theme::Orange;
             const float panelW = std::min(360.0f, rect.width - 2.0f * padding);
             const float panelX = rect.left + (rect.width - panelW) / 2.0f;
             const float panelY = rect.top + rect.height * 0.38f;
-            UI::drawPanel(window_, {panelX, panelY, panelW, 140.0f}, sf::Color(8, 12, 22, 235), accent, 2.5f);
+            UI::drawPanel(window_, {panelX, panelY, panelW, 140.0f}, Theme::withAlpha(Theme::Panel, 235), accent, 2.5f);
             UI::drawText(window_, fontOrbitron_, std::to_string(static_cast<int>(std::ceil(previewLeft))),
                          {rect.left + rect.width / 2.0f, panelY + 48.0f}, 54, accent, true);
             UI::drawText(window_, fontRajdhaniBold_, unlocked ? "MOVE UNLOCKED - RUN" : "MEMORIZE THE MAZE",
-                         {rect.left + rect.width / 2.0f, panelY + 112.0f}, 17, Theme::Text, true);
+                         {rect.left + rect.width / 2.0f, panelY + 112.0f}, 17, Theme::TextPrimary, true);
         }
     }
 }
@@ -1349,40 +1357,40 @@ void Game::renderMenu() {
     UI::drawAnimatedBackground(window_, menuTime_);
 
     UI::drawText(window_, fontOrbitron_, "MAZE CHASE",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 130.0f), 64, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 130.0f), 64, Theme::Orange, true);
 
     UI::drawText(window_, fontRajdhaniMedium_, "CYBER-CHASE ESCAPE SIMULATOR",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 185.0f), 18, Theme::TextDim, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 185.0f), 18, Theme::TextSecondary, true);
 
     mainMenu_.draw(window_, fontRajdhaniBold_, fontRajdhaniMedium_,
                    sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 260.0f), 55.0f, 440.0f);
 
     UI::drawText(window_, fontRajdhaniMedium_, "W/S or UP/DOWN to Navigate  |  ENTER to Select  |  F1 Controls Test",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 665.0f), 16, Theme::TextMuted, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 665.0f), 16, Theme::TextSecondary, true);
 }
 
 void Game::renderLeaderboard() {
     UI::drawAnimatedBackground(window_, menuTime_);
 
     UI::drawText(window_, fontOrbitron_, "LEADERBOARD",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 160.0f), 48, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 160.0f), 48, Theme::Orange, true);
 
     UI::drawPanel(window_, sf::FloatRect(55.0f, 210.0f, 560.0f, 430.0f),
-                 Theme::Panel, Theme::PanelOutline, 2.0f);
-    UI::drawText(window_, fontRajdhaniBold_, "TOP 10", sf::Vector2f(80, 230), 23, Theme::Amber);
+                 Theme::Panel, Theme::PanelBorder, 2.0f);
+    UI::drawText(window_, fontRajdhaniBold_, "TOP 10", sf::Vector2f(80, 230), 23, Theme::ExitGold);
     float y = 265.0f;
     int rank = 1;
     for (const auto& entry : leaderboard_.top()) {
         std::ostringstream row;
         row << rank++ << ". " << entry.name << "   " << entry.score << "   " << entry.mode << "  " << entry.detail;
-        UI::drawText(window_, fontRajdhaniMedium_, row.str(), sf::Vector2f(82, y), 18, Theme::Text);
+        UI::drawText(window_, fontRajdhaniMedium_, row.str(), sf::Vector2f(82, y), 18, Theme::TextPrimary);
         y += 32.0f;
     }
-    UI::drawPanel(window_, sf::FloatRect(650.0f, 210.0f, 575.0f, 430.0f), Theme::Panel, Theme::PanelOutline, 2.0f);
-    UI::drawText(window_, fontRajdhaniBold_, "BST VIEW", sf::Vector2f(675, 230), 23, Theme::Cyan);
+    UI::drawPanel(window_, sf::FloatRect(650.0f, 210.0f, 575.0f, 430.0f), Theme::Panel, Theme::PanelBorder, 2.0f);
+    UI::drawText(window_, fontRajdhaniBold_, "BST VIEW", sf::Vector2f(675, 230), 23, Theme::Orange);
     std::ostringstream stats;
     stats << "Nodes: " << leaderboard_.tree().size() << "   Height: " << leaderboard_.tree().height();
-    UI::drawText(window_, fontRajdhaniMedium_, stats.str(), sf::Vector2f(675, 260), 18, Theme::Text);
+    UI::drawText(window_, fontRajdhaniMedium_, stats.str(), sf::Vector2f(675, 260), 18, Theme::TextPrimary);
     using TreeNode = dsa_lib::BST<LeaderboardEntry, LeaderboardCompare>::Node;
     const auto& tree = leaderboard_.tree();
     const TreeNode* root = tree.getRoot();
@@ -1411,7 +1419,7 @@ void Game::renderLeaderboard() {
             break;
         }
     }
-    UI::drawText(window_, fontRajdhaniMedium_, latestLabel, {675.0f, 282.0f}, 16, Theme::Amber);
+    UI::drawText(window_, fontRajdhaniMedium_, latestLabel, {675.0f, 282.0f}, 16, Theme::ExitGold);
 
     const int nodeCount = static_cast<int>(inOrderNodes.size());
     const int treeHeight = tree.height();
@@ -1482,27 +1490,27 @@ void Game::renderLeaderboard() {
         sf::CircleShape circle(radius);
         circle.setOrigin(radius, radius);
         circle.setPosition(x, yNode);
-        circle.setFillColor(Theme::Background);
-        circle.setOutlineColor(latest ? Theme::Amber : Theme::Cyan);
+        circle.setFillColor(latest ? Theme::Orange : Theme::Panel);
+        circle.setOutlineColor(Theme::Orange);
         circle.setOutlineThickness(latest ? 3.0f : 1.5f);
         window_.draw(circle);
         const unsigned int scoreFontSize = static_cast<unsigned int>(std::max(1.0f, std::min(14.0f, radius * 0.72f)));
         UI::drawText(window_, fontRajdhaniBold_, std::to_string(item.node->data.score),
-                     {x, yNode}, scoreFontSize, Theme::Text, true);
+                     {x, yNode}, scoreFontSize, latest ? Theme::Background : Theme::TextPrimary, true);
 
         if (truncated && item.depth + 1 == visibleLevels) {
             const int hidden = countSubtree(item.node->left) + countSubtree(item.node->right);
             if (hidden > 0) {
                 const unsigned int moreFontSize = static_cast<unsigned int>(std::max(5.0f, std::min(10.0f, xStep * 0.28f)));
                 UI::drawText(window_, fontRajdhaniMedium_, "+" + std::to_string(hidden) + " more",
-                             {x, yNode + radius + moreFontSize}, moreFontSize, Theme::TextDim, true);
+                             {x, yNode + radius + moreFontSize}, moreFontSize, Theme::TextSecondary, true);
             }
         }
     }
     std::ostringstream sequence; sequence << (leaderboardTraversal_ == 1 ? "IN" : leaderboardTraversal_ == 2 ? "PRE" : "POST") << ": ";
     for (const auto& e : leaderboard_.traversal(leaderboardTraversal_)) sequence << e.score << " ";
-    UI::drawText(window_, fontRajdhaniMedium_, sequence.str(), {675, 585}, 16, Theme::TextDim);
-    UI::drawText(window_, fontRajdhaniMedium_, "1 In-order  2 Pre-order  3 Post-order", {675, 610}, 15, Theme::TextMuted);
+    UI::drawText(window_, fontRajdhaniMedium_, sequence.str(), {675, 585}, 16, Theme::TextSecondary);
+    UI::drawText(window_, fontRajdhaniMedium_, "1 In-order  2 Pre-order  3 Post-order", {675, 610}, 15, Theme::TextSecondary);
 
 }
 
@@ -1510,48 +1518,48 @@ void Game::renderHowToPlay() {
     UI::drawAnimatedBackground(window_, menuTime_);
 
     UI::drawText(window_, fontOrbitron_, "HOW TO PLAY",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 110.0f), 44, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 110.0f), 44, Theme::Orange, true);
 
     UI::drawPanel(window_, sf::FloatRect(270.0f, 170.0f, 740.0f, 440.0f),
-                 Theme::Panel, Theme::PanelOutline, 2.0f);
+                 Theme::Panel, Theme::PanelBorder, 2.0f);
 
     float lineY = 195.0f;
     float stepY = 48.0f;
 
-    UI::drawText(window_, fontRajdhaniBold_, "[1] SINGLE PLAYER", sf::Vector2f(300.0f, lineY), 18, Theme::Cyan);
+    UI::drawText(window_, fontRajdhaniBold_, "[1] SINGLE PLAYER", sf::Vector2f(300.0f, lineY), 18, Theme::Orange);
     UI::drawText(window_, fontRajdhaniMedium_, "Navigate the maze to the Exit Gate. The AI Hunter awakens at 8.0s and hunts via BFS.",
-                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::Text);
+                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::TextPrimary);
 
     lineY += stepY;
-    UI::drawText(window_, fontRajdhaniBold_, "[2] LOCAL 2-PLAYER SPLIT SCREEN", sf::Vector2f(300.0f, lineY), 18, Theme::Cyan);
+    UI::drawText(window_, fontRajdhaniBold_, "[2] LOCAL 2-PLAYER SPLIT SCREEN", sf::Vector2f(300.0f, lineY), 18, Theme::Orange);
     UI::drawText(window_, fontRajdhaniMedium_, "Best of 2 rounds on the same maze! P1 is Left (WASD), P2 is Right (Arrows). Roles swap round 2.",
-                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::Text);
+                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::TextPrimary);
 
     lineY += stepY;
-    UI::drawText(window_, fontRajdhaniBold_, "[3] 2-PLAYER RULES & TIMERS", sf::Vector2f(300.0f, lineY), 18, Theme::Amber);
+    UI::drawText(window_, fontRajdhaniBold_, "[3] 2-PLAYER RULES & TIMERS", sf::Vector2f(300.0f, lineY), 18, Theme::ExitGold);
     UI::drawText(window_, fontRajdhaniMedium_, "5s map preview. 4s freeze. Runner starts at 4s; Hunter released 3s later (7s). Limit: 90s.",
-                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::Text);
+                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::TextPrimary);
 
     lineY += stepY;
-    UI::drawText(window_, fontRajdhaniBold_, "[4] FOG OF WAR & RADAR", sf::Vector2f(300.0f, lineY), 18, Theme::Crimson);
+    UI::drawText(window_, fontRajdhaniBold_, "[4] FOG OF WAR & RADAR", sf::Vector2f(300.0f, lineY), 18, Theme::Red);
     UI::drawText(window_, fontRajdhaniMedium_, "Runner sees tight LOS (r=3). Hunter sees wide LOS (r=6) + periodic runner blip every 1.5s.",
-                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::Text);
+                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::TextPrimary);
 
     lineY += stepY;
-    UI::drawText(window_, fontRajdhaniBold_, "[5] CONTROLS TEST (F1)", sf::Vector2f(300.0f, lineY), 18, Theme::Green);
+    UI::drawText(window_, fontRajdhaniBold_, "[5] CONTROLS TEST (F1)", sf::Vector2f(300.0f, lineY), 18, Theme::ExitGold);
     UI::drawText(window_, fontRajdhaniMedium_, "Press F1 anytime to verify simultaneous keypresses on a single keyboard without ghosting.",
-                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::Text);
+                 sf::Vector2f(300.0f, lineY + 18.0f), 15, Theme::TextPrimary);
 
     UI::drawText(window_, fontRajdhaniBold_, "Press ESC or ENTER to return to Main Menu",
-                 sf::Vector2f(640.0f, 650.0f), 18, Theme::Cyan, true);
+                 sf::Vector2f(640.0f, 650.0f), 18, Theme::Orange, true);
 }
 
 void Game::renderPause() {
     UI::drawPanel(window_, sf::FloatRect(0, 0, static_cast<float>(cfg::WINDOW_WIDTH), static_cast<float>(cfg::WINDOW_HEIGHT)),
-                 Theme::OverlayDim);
+                 Theme::withAlpha(Theme::Background, 220));
 
     UI::drawText(window_, fontOrbitron_, "PAUSED",
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 210.0f), 48, Theme::Cyan, true);
+                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 210.0f), 48, Theme::Orange, true);
 
     UI::MenuList& menu = state_ == GameState::TwoPlayerPaused ? twoPlayerPauseMenu_ : pauseMenu_;
     menu.draw(window_, fontRajdhaniBold_, fontRajdhaniMedium_,
@@ -1560,25 +1568,25 @@ void Game::renderPause() {
 
 void Game::renderGameOver() {
     UI::drawPanel(window_, sf::FloatRect(0, 0, static_cast<float>(cfg::WINDOW_WIDTH), static_cast<float>(cfg::WINDOW_HEIGHT)),
-                 Theme::OverlayDim);
+                 Theme::withAlpha(Theme::Background, 220));
 
     std::string titleStr = won_ ? "YOU ESCAPED!" : "CAUGHT!";
-    sf::Color titleCol = won_ ? Theme::Green : Theme::Crimson;
+    sf::Color titleCol = won_ ? Theme::ExitGold : Theme::Red;
 
     UI::drawText(window_, fontOrbitron_, titleStr,
                  sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 180.0f), 52, titleCol, true);
 
     UI::drawPanel(window_, sf::FloatRect(420.0f, 250.0f, 440.0f, 130.0f),
-                 Theme::Panel, Theme::PanelOutline, 2.0f);
+                 Theme::Panel, Theme::PanelBorder, 2.0f);
 
     std::ostringstream ssT, ssS, ssM;
     ssT << "Time: " << std::fixed << std::setprecision(1) << finalTime_ << "s";
     ssS << "Steps: " << finalSteps_;
     ssM << "Seed: " << maze_.seed();
 
-    UI::drawText(window_, fontRajdhaniBold_, ssT.str(), sf::Vector2f(460.0f, 275.0f), 22, Theme::Text);
-    UI::drawText(window_, fontRajdhaniBold_, ssS.str(), sf::Vector2f(680.0f, 275.0f), 22, Theme::Text);
-    UI::drawText(window_, fontRajdhaniMedium_, ssM.str(), sf::Vector2f(570.0f, 330.0f), 20, Theme::TextDim);
+    UI::drawText(window_, fontRajdhaniBold_, ssT.str(), sf::Vector2f(460.0f, 275.0f), 22, Theme::TextPrimary);
+    UI::drawText(window_, fontRajdhaniBold_, ssS.str(), sf::Vector2f(680.0f, 275.0f), 22, Theme::TextPrimary);
+    UI::drawText(window_, fontRajdhaniMedium_, ssM.str(), sf::Vector2f(570.0f, 330.0f), 20, Theme::TextSecondary);
 
     gameOverMenu_.draw(window_, fontRajdhaniBold_, fontRajdhaniMedium_,
                        sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 440.0f), 60.0f, 360.0f);
@@ -1589,33 +1597,33 @@ void Game::renderGeneration() {
     const float size = 720.0f / static_cast<float>(cfg::MAZE_ROWS);
     for (int r = 0; r < cfg::MAZE_ROWS; ++r) for (int c = 0; c < cfg::MAZE_COLS; ++c) {
         sf::RectangleShape tile({size, size}); tile.setPosition(c * size, r * size);
-        tile.setFillColor(maze_.isWall(r,c) ? sf::Color(20, 28, 43) : sf::Color(8, 14, 25)); window_.draw(tile);
+        tile.setFillColor(maze_.isWall(r,c) ? Theme::Wall : Theme::Floor); window_.draw(tile);
     }
-    sf::RectangleShape head({size, size}); head.setPosition(maze_.currentCol() * size, maze_.currentRow() * size); head.setFillColor(sf::Color(0, 220, 230, 180)); window_.draw(head);
-    UI::drawPanel(window_, {750, 35, 490, 650}, Theme::Panel, Theme::PanelOutline, 2);
-    UI::drawText(window_, fontOrbitron_, "STACK (LIFO)", {995, 75}, 28, Theme::Cyan, true);
+    sf::RectangleShape head({size, size}); head.setPosition(maze_.currentCol() * size, maze_.currentRow() * size); head.setFillColor(Theme::withAlpha(Theme::Orange, 180)); window_.draw(head);
+    UI::drawPanel(window_, {750, 35, 490, 650}, Theme::Panel, Theme::PanelBorder, 2);
+    UI::drawText(window_, fontOrbitron_, "STACK (LIFO)", {995, 75}, 28, Theme::Orange, true);
     auto stack = maze_.generationStackTop(cfg::GENERATION_STACK_VISIBLE);
     float y = 115;
     for (size_t i = 0; i < stack.size(); ++i, y += 35) {
-        UI::drawPanel(window_, {790, y, 410, 28}, i == 0 ? sf::Color(0, 90, 110) : Theme::Background, i == 0 ? Theme::Cyan : Theme::PanelOutline, 1);
-        UI::drawText(window_, fontRajdhaniBold_, "(" + std::to_string(stack[i].first) + ", " + std::to_string(stack[i].second) + ")", {810, y + 4}, 17, Theme::Text);
+        UI::drawPanel(window_, {790, y, 410, 28}, i == 0 ? Theme::DarkOrange : Theme::Background, i == 0 ? Theme::Orange : Theme::PanelBorder, 1);
+        UI::drawText(window_, fontRajdhaniBold_, "(" + std::to_string(stack[i].first) + ", " + std::to_string(stack[i].second) + ")", {810, y + 4}, 17, Theme::TextPrimary);
     }
     std::ostringstream info; info << "pushes " << maze_.generationPushes() << "  pops " << maze_.generationPops()
         << "\ndepth " << stack.size() << "  max depth " << maze_.generationMaxDepth() << "\nstep " << maze_.generationStep();
-    UI::drawText(window_, fontRajdhaniMedium_, info.str(), {790, 555}, 18, Theme::Text);
+    UI::drawText(window_, fontRajdhaniMedium_, info.str(), {790, 555}, 18, Theme::TextPrimary);
     std::string phase = maze_.generationPhase() == GenerationPhase::DFS_CARVE ? "DFS CARVE" : maze_.generationPhase() == GenerationPhase::BACKTRACK ? "BACKTRACK" : maze_.generationPhase() == GenerationPhase::BRAID ? "BRAID" : "MAZE READY";
-    UI::drawText(window_, fontRajdhaniBold_, phase, {995, 635}, 22, Theme::Amber, true);
-    UI::drawText(window_, fontRajdhaniMedium_, maze_.lastAction(), {995, 660}, 17, Theme::Text, true);
-    UI::drawText(window_, fontRajdhaniMedium_, "SPACE skip   +/- speed", {995, 700}, 15, Theme::TextMuted, true);
+    UI::drawText(window_, fontRajdhaniBold_, phase, {995, 635}, 22, Theme::ExitGold, true);
+    UI::drawText(window_, fontRajdhaniMedium_, maze_.lastAction(), {995, 660}, 17, Theme::TextPrimary, true);
+    UI::drawText(window_, fontRajdhaniMedium_, "SPACE skip   +/- speed", {995, 700}, 15, Theme::TextSecondary, true);
 }
 
 void Game::renderNameEntry() {
     UI::drawAnimatedBackground(window_, menuTime_);
-    UI::drawText(window_, fontOrbitron_, "NEW HIGH SCORE", {640, 175}, 42, Theme::Green, true);
-    UI::drawText(window_, fontRajdhaniBold_, "Score: " + std::to_string(pendingScore_), {640, 240}, 28, Theme::Amber, true);
-    UI::drawPanel(window_, {390, 300, 500, 95}, Theme::Panel, Theme::Cyan, 2);
-    UI::drawText(window_, fontRajdhaniBold_, enteredName_ + "_", {640, 347}, 32, Theme::Text, true);
-    UI::drawText(window_, fontRajdhaniMedium_, "Type your name (max 10) and press ENTER", {640, 450}, 18, Theme::TextMuted, true);
+    UI::drawText(window_, fontOrbitron_, "NEW HIGH SCORE", {640, 175}, 42, Theme::ExitGold, true);
+    UI::drawText(window_, fontRajdhaniBold_, "Score: " + std::to_string(pendingScore_), {640, 240}, 28, Theme::ExitGold, true);
+    UI::drawPanel(window_, {390, 300, 500, 95}, Theme::Panel, Theme::Orange, 2);
+    UI::drawText(window_, fontRajdhaniBold_, enteredName_ + "_", {640, 347}, 32, Theme::TextPrimary, true);
+    UI::drawText(window_, fontRajdhaniMedium_, "Type your name (max 10) and press ENTER", {640, 450}, 18, Theme::TextSecondary, true);
 }
 
 void Game::renderBfsDemo() {
@@ -1626,15 +1634,15 @@ void Game::renderBfsDemo() {
         float t = static_cast<float>(i) / std::max(1, visible - 1);
         sf::RectangleShape mark({static_cast<float>(cfg::TILE_SIZE), static_cast<float>(cfg::TILE_SIZE)});
         mark.setPosition(bfs.visitOrder[i].second * cfg::TILE_SIZE, bfs.visitOrder[i].first * cfg::TILE_SIZE);
-        mark.setFillColor(sf::Color(static_cast<sf::Uint8>(0 + 110*t), static_cast<sf::Uint8>(210 - 130*t), 255, 90)); window_.draw(mark);
+        mark.setFillColor(Theme::withAlpha(Theme::mix(Theme::DarkOrange, Theme::ExitGold, t), 90)); window_.draw(mark);
     }
     if (bfsDemoElapsed_ >= cfg::BFS_DEMO_WAVE_SECONDS) for (const auto& cell : bfs.path) {
         sf::RectangleShape mark({static_cast<float>(cfg::TILE_SIZE - 8), static_cast<float>(cfg::TILE_SIZE - 8)});
-        mark.setPosition(cell.second * cfg::TILE_SIZE + 4, cell.first * cfg::TILE_SIZE + 4); mark.setFillColor(sf::Color(170, 80, 255, 210)); window_.draw(mark);
+        mark.setPosition(cell.second * cfg::TILE_SIZE + 4, cell.first * cfg::TILE_SIZE + 4); mark.setFillColor(Theme::withAlpha(Theme::Bone, 210)); window_.draw(mark);
     }
     window_.setView(window_.getDefaultView());
-    UI::drawPanel(window_, {930, 80, 300, 145}, sf::Color(6, 12, 24, 225), Theme::Cyan, 2);
-    UI::drawText(window_, fontRajdhaniBold_, "DEMO OVERLAY", {950, 96}, 18, Theme::Cyan);
+    UI::drawPanel(window_, {930, 80, 300, 145}, Theme::withAlpha(Theme::Panel, 225), Theme::Orange, 2);
+    UI::drawText(window_, fontRajdhaniBold_, "DEMO OVERLAY", {950, 96}, 18, Theme::Orange);
     std::ostringstream s; s << "nodes visited: " << bfs.nodesVisited << "\npath length: " << bfs.path.size() << "\nmax queue: " << bfs.maxQueueSize << "\n" << bfs.micros << " microseconds";
-    UI::drawText(window_, fontRajdhaniMedium_, s.str(), {950, 122}, 16, Theme::Text);
+    UI::drawText(window_, fontRajdhaniMedium_, s.str(), {950, 122}, 16, Theme::TextPrimary);
 }

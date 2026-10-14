@@ -10,7 +10,7 @@ void drawText(sf::RenderWindow& window, const sf::Font& font, const std::string&
               sf::Vector2f pos, unsigned int size, sf::Color color, bool centered = false);
 
 void drawPanel(sf::RenderWindow& window, sf::FloatRect bounds, sf::Color bgColor,
-               sf::Color outlineColor = sf::Color::Transparent, float outlineThickness = 0.0f);
+               sf::Color outlineColor = Theme::Transparent, float outlineThickness = 0.0f);
 
 void drawAnimatedBackground(sf::RenderWindow& window, float elapsedTime);
 
