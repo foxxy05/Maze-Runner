@@ -1,4 +1,5 @@
 #pragma once
+#include <SFML/Graphics/Color.hpp>
 
 namespace cfg {
 
@@ -34,17 +35,14 @@ constexpr int PATH_TILE = 0;
 constexpr int STEP_DIST = 2;
 constexpr float BRAID_PERCENT = 0.18f;
 constexpr int NUM_DIRECTIONS = 4;
-constexpr float GENERATION_DFS_SECONDS = 4.0f;
-constexpr float GENERATION_BRAID_SECONDS = 0.8f;
 constexpr int GENERATION_STACK_VISIBLE = 12;
 constexpr float BFS_DEMO_WAVE_SECONDS = 1.2f;
 // Rendering / accessibility
 constexpr float LOW_FX_FPS_THRESHOLD = 45.0f;
 constexpr float LOW_FX_TRIGGER_SECONDS = 3.0f;
-constexpr int LOW_FX_PARTICLE_CAP = 40;
-constexpr int PARTICLE_CAP = 150;
 constexpr float DANGER_DISTANCE_TILES = 11.0f;
 constexpr float PORTAL_ROTATION_SPEED = 70.0f;
+constexpr unsigned int RADIAL_GRADIENT_SIZE = 128;
 constexpr float POWERUP_RESPAWN_SECONDS = 10.0f;
 constexpr float SURGE_DURATION = 2.0f;
 constexpr float DASH_DURATION = 1.0f;
@@ -53,6 +51,22 @@ constexpr float DASH_MULTIPLIER = 1.8f;
 constexpr float PING_DURATION = 2.0f;
 constexpr int GENERATION_DFS_STEPS_PER_FRAME = 6;
 constexpr int GENERATION_BRAID_STEPS_PER_FRAME = 1;
+
+// Theme palette
+inline const sf::Color Background(0x07, 0x0A, 0x12);
+inline const sf::Color Panel(0x0E, 0x14, 0x22);
+inline const sf::Color Cyan(0x00, 0xE5, 0xFF);
+inline const sf::Color Crimson(0xFF, 0x2D, 0x55);
+inline const sf::Color Green(0x00, 0xFF, 0x87);
+inline const sf::Color Amber(0xFF, 0xB8, 0x00);
+inline const sf::Color Text(0xE6, 0xEC, 0xFF);
+inline const sf::Color TextDim(140, 155, 190);
+inline const sf::Color TextMuted(95, 105, 135);
+inline const sf::Color PanelOutline(30, 48, 80);
+inline const sf::Color OverlayDim(7, 10, 18, 220);
+inline const sf::Color MenuGrid(15, 25, 45, 75);
+inline const sf::Color WallBase(18, 23, 38);
+inline const sf::Color PathBase(10, 13, 24);
 
 // Speeds (Cells per second)
 constexpr float PLAYER_CELLS_PER_SEC = 7.0f;
@@ -84,16 +98,10 @@ constexpr float CATCH_DISTANCE_FACTOR = 0.6f;
 
 // Display & Diagnostics
 constexpr float PULSE_SPEED = 5.0f;
-constexpr bool DEBUG_LOG = true;
 
 // Render Constants (RenderUtils)
-constexpr int MAX_COUNTDOWN_DIGIT = 5;
-constexpr int MIN_COUNTDOWN_DIGIT = 1;
 constexpr float PLAYER_GLOW_RADIUS = 11.0f;
 constexpr float HUNTER_THREAT_RADIUS = 13.0f;
-constexpr float DIGIT_WIDTH = 24.0f;
-constexpr float DIGIT_HEIGHT = 38.0f;
-constexpr float DIGIT_THICKNESS = 5.0f;
 
 // Phase 3: Local 2-Player Split Screen Constants
 constexpr float TWO_P_HUNTER_RELEASE = 3.0f;

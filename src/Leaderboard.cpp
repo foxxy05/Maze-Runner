@@ -6,17 +6,17 @@
 #include <windows.h>
 #endif
 
-inline bool LeaderboardCompare::operator()(const LeaderboardEntry& a, const LeaderboardEntry& b) const {
+bool LeaderboardCompare::operator()(const LeaderboardEntry& a, const LeaderboardEntry& b) const {
     if (a.score != b.score) return a.score < b.score;
     if (a.name != b.name) return a.name > b.name;
     return a.insertionId > b.insertionId;
 }
 
-inline Leaderboard::Leaderboard() {
+Leaderboard::Leaderboard() {
     load();
 }
 
-inline std::string Leaderboard::filePath() const {
+std::string Leaderboard::filePath() const {
 #ifdef _WIN32
     char path[MAX_PATH] = {};
     DWORD length = GetModuleFileNameA(nullptr, path, MAX_PATH);
@@ -29,7 +29,7 @@ inline std::string Leaderboard::filePath() const {
     return "leaderboard.txt";
 }
 
-inline void Leaderboard::load() {
+void Leaderboard::load() {
     entries_.clear();
     nextInsertionId_ = 1;
     std::ifstream input(filePath());
@@ -51,7 +51,7 @@ inline void Leaderboard::load() {
     }
 }
 
-inline bool Leaderboard::save() const {
+bool Leaderboard::save() const {
     std::ofstream output(filePath(), std::ios::trunc);
     if (!output) return false;
     entries_.preorder([&output](const LeaderboardEntry& entry) {
@@ -61,14 +61,14 @@ inline bool Leaderboard::save() const {
     return static_cast<bool>(output);
 }
 
-inline void Leaderboard::add(std::string name, int score, const std::string& mode, const std::string& detail) {
+void Leaderboard::add(std::string name, int score, const std::string& mode, const std::string& detail) {
     name.erase(std::remove_if(name.begin(), name.end(), [](char c) { return c == '\t' || c == '\n' || c == '\r'; }), name.end());
     if (name.empty()) name = "PLAYER";
     entries_.insert({name.substr(0, 10), score, mode, detail, nextInsertionId_++});
     save();
 }
 
-inline std::vector<LeaderboardEntry> Leaderboard::top(int limit) const {
+std::vector<LeaderboardEntry> Leaderboard::top(int limit) const {
     std::vector<LeaderboardEntry> results;
     entries_.reverseInorder([&results, limit](const LeaderboardEntry& entry) {
         if (static_cast<int>(results.size()) < limit) results.push_back(entry);
@@ -76,7 +76,7 @@ inline std::vector<LeaderboardEntry> Leaderboard::top(int limit) const {
     return results;
 }
 
-inline std::vector<LeaderboardEntry> Leaderboard::traversal(int order) const {
+std::vector<LeaderboardEntry> Leaderboard::traversal(int order) const {
     std::vector<LeaderboardEntry> results;
     if (order == 2) entries_.preorder([&results](const LeaderboardEntry& entry) { results.push_back(entry); });
     else if (order == 3) entries_.postorder([&results](const LeaderboardEntry& entry) { results.push_back(entry); });

@@ -21,17 +21,16 @@ enum class GameState {
     TwoPlayerPlaying,
     TwoPlayerPaused,
     TwoPlayerIntermission,
-    TwoPlayerMatchOver
-    , Generating
-    , NameEntry
-    , LevelCleared
+    TwoPlayerMatchOver,
+    Generating,
+    NameEntry,
+    LevelCleared
 };
 
 enum class MenuSubScreen {
     Main,
     Leaderboard,
-    HowToPlay,
-    ControlsTest
+    HowToPlay
 };
 
 enum class PlayerRole {
@@ -100,7 +99,7 @@ private:
     // Two Player renders
     void updateTwoPlayer(float dt);
     void renderTwoPlayer();
-    void renderTwoPlayerHalf(int playerNum, PlayerRole role, const sf::View& view, bool isPreview);
+    void renderTwoPlayerHalf(PlayerRole role, bool isPreview);
     void renderTwoPlayerHeaderAndHUD();
     void renderTwoPlayerIntermission();
     void renderTwoPlayerMatchOver();
@@ -180,13 +179,6 @@ private:
     float roundElapsed_ = 0.0f;
     float pulseTime_ = 0.0f;
     float menuTime_ = 0.0f;
-    float debugTimer_ = 0.0f;
-
-    // Movement tracking for debug logging
-    int playerLastGridR_ = 1;
-    int playerLastGridC_ = 1;
-    int playerCellsThisSec_ = 0;
-
     int finalSteps_ = 0;
     float finalTime_ = 0.0f;
 

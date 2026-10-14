@@ -18,21 +18,16 @@ struct MenuItem {
     std::string label;
     bool enabled = true;
     int id = 0;
-    std::string subtitle;
 };
 
 class MenuList {
 public:
     MenuList() = default;
 
-    void addItem(const std::string& label, bool enabled = true, int id = 0, const std::string& subtitle = "");
-    void clear();
-
+    void addItem(const std::string& label, bool enabled = true, int id = 0);
     void navigate(int dir);
     int handleEvent(const sf::Event& event); // Returns selected item id, or -1 if no selection, -2 if Esc pressed
 
-    int selectedId() const;
-    int selectedIndex() const { return selectedIndex_; }
     void setSelectedIndex(int idx);
 
     void draw(sf::RenderWindow& window, const sf::Font& fontBold, const sf::Font& fontRegular,

@@ -64,7 +64,7 @@ Game::Game(unsigned int seed)
 
     // Initialize Menu Lists
     mainMenu_.addItem("Single Player", true, 1);
-    mainMenu_.addItem("Local 2-Player", true, 2); // Enabled in Phase 3
+    mainMenu_.addItem("Local 2-Player", true, 2);
     mainMenu_.addItem("Leaderboard", true, 3);
     mainMenu_.addItem("How to Play", true, 4);
     mainMenu_.addItem("Controls Test", true, 6);
@@ -90,7 +90,7 @@ Game::Game(unsigned int seed)
 }
 
 void Game::buildRadialGradient() {
-    const unsigned int size = 128;
+    const unsigned int size = cfg::RADIAL_GRADIENT_SIZE;
     sf::Image image; image.create(size, size, sf::Color::Transparent);
     for (unsigned int y = 0; y < size; ++y) for (unsigned int x = 0; x < size; ++x) {
         float dx = (static_cast<float>(x) / (size - 1)) * 2.0f - 1.0f;
@@ -212,10 +212,6 @@ void Game::finishGeneratedRound() {
 
     roundElapsed_ = 0.0f;
     pulseTime_ = 0.0f;
-    debugTimer_ = 0.0f;
-    playerCellsThisSec_ = 0;
-    playerLastGridR_ = player_.gridRow();
-    playerLastGridC_ = player_.gridCol();
     won_ = false;
 }
 
@@ -482,7 +478,6 @@ void Game::update(float dt) {
     roundElapsed_ += dt;
     pulseTime_ += dt;
     if (showBfsDemo_) bfsDemoElapsed_ += dt;
-    debugTimer_ += dt;
 
     bool playerCanMove = (roundElapsed_ >= cfg::MOVEMENT_FREEZE_TIME);
 
@@ -515,11 +510,6 @@ void Game::update(float dt) {
         int levelFog = std::max(2, cfg::FOG_VISION_RADIUS - (level_ >= 4) - (level_ >= 7));
         player_.discoverAround(maze_, levelFog, cfg::FOG_LIGHT_CONE_EXTRA);
 
-        if (player_.gridRow() != playerLastGridR_ || player_.gridCol() != playerLastGridC_) {
-            playerCellsThisSec_++;
-            playerLastGridR_ = player_.gridRow();
-            playerLastGridC_ = player_.gridCol();
-        }
     }
 
     // Win condition check
@@ -596,16 +586,6 @@ void Game::update(float dt) {
 
     cameraView_.setCenter(clampedX, clampedY);
 
-    // Debug log (console only, 1Hz)
-    if (cfg::DEBUG_LOG && debugTimer_ >= 1.0f) {
-        debugTimer_ -= 1.0f;
-        int hunterMoved = hunter_.getAndResetCellsMoved();
-        std::cout << "[DEBUG] Hunter: " << hunterMoved << " cells/s ("
-                  << (hunterIsAwake ? "awake" : "dormant")
-                  << ") | Player: " << playerCellsThisSec_ << " cells/s"
-                  << std::endl;
-        playerCellsThisSec_ = 0;
-    }
 }
 
 void Game::updateTwoPlayer(float dt) {
@@ -847,7 +827,8 @@ void Game::renderWorld() {
     // Precomputed radial image is stretched rather than rebuilt every frame.
     radialGradientSprite_.setPosition(cameraView_.getCenter().x - cameraView_.getSize().x / 2.0f,
                                       cameraView_.getCenter().y - cameraView_.getSize().y / 2.0f);
-    radialGradientSprite_.setScale(cameraView_.getSize().x / 128.0f, cameraView_.getSize().y / 128.0f);
+    radialGradientSprite_.setScale(cameraView_.getSize().x / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE),
+                                   cameraView_.getSize().y / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE));
     if (!lowFx_) {
         float dx = player_.posX() - hunter_.posX(), dy = player_.posY() - hunter_.posY();
         float proximity = std::max(0.0f, 1.0f - std::sqrt(dx*dx + dy*dy) / (cfg::DANGER_DISTANCE_TILES * cfg::TILE_SIZE));
@@ -952,19 +933,18 @@ void Game::renderTwoPlayer() {
 
     // Render Left Viewport (P1)
     window_.setView(isPreview ? p1PreviewView_ : p1View_);
-    renderTwoPlayerHalf(1, p1Role, isPreview ? p1PreviewView_ : p1View_, isPreview);
+    renderTwoPlayerHalf(p1Role, isPreview);
 
     // Render Right Viewport (P2)
     window_.setView(isPreview ? p2PreviewView_ : p2View_);
-    renderTwoPlayerHalf(2, p2Role, isPreview ? p2PreviewView_ : p2View_, isPreview);
+    renderTwoPlayerHalf(p2Role, isPreview);
 
     // Switch back to Default View for UI / HUD
     window_.setView(window_.getDefaultView());
     renderTwoPlayerHeaderAndHUD();
 }
 
-void Game::renderTwoPlayerHalf(int playerNum, PlayerRole role, const sf::View& /*view*/, bool isPreview) {
-    (void)playerNum;
+void Game::renderTwoPlayerHalf(PlayerRole role, bool isPreview) {
     float pulse = (std::sin(pulseTime_ * cfg::PULSE_SPEED) + 1.0f) * 0.5f;
     renderPowerUps();
 
@@ -1004,9 +984,7 @@ void Game::renderTwoPlayerHalf(int playerNum, PlayerRole role, const sf::View& /
         }
     }
 
-    // Runner Visibility on this half:
-    // Always visible to self (Runner) or during preview.
-    // To Hunter: visible if in hunter LOS or during periodic blip (0.25s every 1.5s anywhere on map).
+    // Runner visibility follows role, line of sight, periodic blip, and active PING.
     bool runnerVisible = isPreview || (role == PlayerRole::Runner);
     if (!runnerVisible && role == PlayerRole::Hunter) {
         bool inHunterLOS = tpHunter_.canSeeNow(tpRunner_.gridRow(), tpRunner_.gridCol());
@@ -1022,9 +1000,7 @@ void Game::renderTwoPlayerHalf(int playerNum, PlayerRole role, const sf::View& /
                            tpRunner_.animFrame(), tpRunner_.isMoving(), pulse);
     }
 
-    // Hunter Visibility on this half:
-    // Always visible to self (Hunter) or during preview.
-    // To Runner: only visible inside runner's own LOS.
+    // Hunter is visible to its player or inside the runner's line of sight.
     bool hunterVisible = isPreview || (role == PlayerRole::Hunter);
     if (!hunterVisible && role == PlayerRole::Runner) {
         hunterVisible = tpRunner_.canSeeNow(tpHunter_.gridRow(), tpHunter_.gridCol());

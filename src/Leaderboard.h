@@ -34,5 +34,3 @@ private:
     unsigned long long nextInsertionId_ = 1;
 };
 
-// Header-visible implementation keeps this small component usable by the existing explicit source list.
-#include "Leaderboard.cpp"

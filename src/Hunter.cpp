@@ -1,29 +1,14 @@
 #include "Hunter.h"
-#include "Pathfinder.h"
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
 
 Hunter::Hunter(int startR, int startC, int cellW, int cellH, float cellsPerSec)
     : mover_(startR, startC, cellsPerSec, cellW, cellH),
-      cellsMovedTotal_(0),
-      cellsMovedLastSecond_(0),
-      lastLoggedGridR_(startR),
-      lastLoggedGridC_(startC),
       discovered_(),
       visibleNow_() {
     mover_.setAnimSettings(cfg::HUNTER_ANIM_FRAME_TIME, cfg::HUNTER_TOTAL_FRAMES);
     mover_.setSnapThreshold(cfg::HUNTER_SNAP_THRESHOLD);
-}
-
-void Hunter::step(const Maze& maze, int playerR, int playerC) {
-    if (mover_.gridRow() == playerR && mover_.gridCol() == playerC) return;
-    BfsResult res = Pathfinder::findPath(maze, {mover_.gridRow(), mover_.gridCol()}, {playerR, playerC});
-    latestBfs_ = res;
-    ++bfsRevision_;
-    if (res.found && res.path.size() >= 2) {
-        mover_.setTargetCell(res.path[1].first, res.path[1].second);
-    }
 }
 
 void Hunter::update(float dt, const Maze& maze, int playerR, int playerC, bool isAwake) {
@@ -46,9 +31,6 @@ void Hunter::update(float dt, const Maze& maze, int playerR, int playerC, bool i
     if (mover_.isMoving()) {
         bool reached = mover_.updateTowardsTarget(dt);
         if (reached) {
-            cellsMovedTotal_++;
-            cellsMovedLastSecond_++;
-
             // Chain next cell immediately at cell center
             if (mover_.gridRow() != playerR || mover_.gridCol() != playerC) {
                 BfsResult res = Pathfinder::findPath(maze, {mover_.gridRow(), mover_.gridCol()}, {playerR, playerC});
@@ -69,12 +51,6 @@ void Hunter::updateHuman(float dt, int inputDr, int inputDc, const Maze& maze, b
 
     mover_.updateWithInput(dt, inputDr, inputDc, maze);
 
-    if (mover_.gridRow() != lastLoggedGridR_ || mover_.gridCol() != lastLoggedGridC_) {
-        cellsMovedTotal_++;
-        cellsMovedLastSecond_++;
-        lastLoggedGridR_ = mover_.gridRow();
-        lastLoggedGridC_ = mover_.gridCol();
-    }
 }
 
 void Hunter::resetDiscovery(int rows, int cols) {

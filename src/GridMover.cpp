@@ -19,50 +19,6 @@ GridMover::GridMover(int startR, int startC, float cellsPerSec, int cellW, int c
       totalAnimFrames_(cfg::TOTAL_ANIM_FRAMES) {
 }
 
-void GridMover::reset(int startR, int startC) {
-    gridR_ = startR;
-    gridC_ = startC;
-    targetR_ = startR;
-    targetC_ = startC;
-    posX_ = static_cast<float>(startC * cellW_);
-    posY_ = static_cast<float>(startR * cellH_);
-    facingDr_ = 0;
-    facingDc_ = 1;
-    steps_ = 0;
-    isMoving_ = false;
-    animTimer_ = 0.0f;
-    animFrame_ = 0;
-    speedMultiplier_ = 1.0f;
-}
-
-void GridMover::setFacing(int dr, int dc) {
-    if (dr != 0 || dc != 0) {
-        facingDr_ = dr;
-        facingDc_ = dc;
-    }
-}
-
-bool GridMover::requestMove(int dr, int dc, const Maze& maze) {
-    if (isMoving_) return false;
-    if (dr == 0 && dc == 0) return false;
-
-    facingDr_ = dr;
-    facingDc_ = dc;
-
-    int nextR = gridR_ + dr;
-    int nextC = gridC_ + dc;
-
-    if (!maze.isWall(nextR, nextC)) {
-        targetR_ = nextR;
-        targetC_ = nextC;
-        isMoving_ = true;
-        steps_++;
-        return true;
-    }
-
-    return false;
-}
-
 bool GridMover::setTargetCell(int nextR, int nextC) {
     targetR_ = nextR;
     targetC_ = nextC;

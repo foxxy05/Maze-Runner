@@ -25,6 +25,7 @@ add_executable(MazeChase
     src/DirectionInput.cpp
     src/Pathfinder.cpp
     src/Game.cpp
+    src/Leaderboard.cpp
     src/UI.cpp
     src/GridMover.cpp
 )

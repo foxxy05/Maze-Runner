@@ -56,16 +56,11 @@ void drawAnimatedBackground(sf::RenderWindow& window, float elapsedTime) {
     window.draw(lines);
 }
 
-void MenuList::addItem(const std::string& label, bool enabled, int id, const std::string& subtitle) {
-    items_.push_back({label, enabled, id, subtitle});
+void MenuList::addItem(const std::string& label, bool enabled, int id) {
+    items_.push_back({label, enabled, id});
     if (selectedIndex_ >= static_cast<int>(items_.size())) {
         selectedIndex_ = 0;
     }
-}
-
-void MenuList::clear() {
-    items_.clear();
-    selectedIndex_ = 0;
 }
 
 void MenuList::navigate(int dir) {
@@ -107,13 +102,6 @@ int MenuList::handleEvent(const sf::Event& event) {
         return -2;
     }
 
-    return -1;
-}
-
-int MenuList::selectedId() const {
-    if (selectedIndex_ >= 0 && selectedIndex_ < static_cast<int>(items_.size())) {
-        return items_[selectedIndex_].id;
-    }
     return -1;
 }
 
@@ -166,17 +154,6 @@ void MenuList::draw(sf::RenderWindow& window, const sf::Font& fontBold, const sf
         labelTxt.setPosition(bounds.left + 24.0f, bounds.top + 10.0f);
         window.draw(labelTxt);
 
-        // Draw subtitle if present (e.g. "coming soon")
-        if (!item.subtitle.empty()) {
-            sf::Text subTxt;
-            subTxt.setFont(fontRegular);
-            subTxt.setString(item.subtitle);
-            subTxt.setCharacterSize(14);
-            subTxt.setFillColor(Theme::TextMuted);
-            sf::FloatRect subBounds = subTxt.getLocalBounds();
-            subTxt.setPosition(bounds.left + bounds.width - subBounds.width - 20.0f, bounds.top + 14.0f);
-            window.draw(subTxt);
-        }
     }
 }
 

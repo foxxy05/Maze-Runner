@@ -26,12 +26,8 @@ public:
     bool isMoving() const { return mover_.isMoving(); }
     int animFrame() const { return mover_.animFrame(); }
 
-    void setCellSize(int cellW, int cellH) { mover_.setCellSize(cellW, cellH); }
     void setCellsPerSec(float cps) { mover_.setCellsPerSec(cps); }
     void setSpeedMultiplier(float mult) { mover_.setSpeedMultiplier(mult); }
-
-    GridMover& mover() { return mover_; }
-    const GridMover& mover() const { return mover_; }
 
 private:
     GridMover mover_;
