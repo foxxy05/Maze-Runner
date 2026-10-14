@@ -52,13 +52,11 @@ Game::Game(unsigned int seed)
     p2View_.setViewport(sf::FloatRect(0.5f, 0.0f, 0.5f, 1.0f));
     p2View_.setSize(400.0f, 450.0f);
 
-    float p2W = mazeW * 1.15f;
-    float p2H = p2W * (720.0f / 640.0f);
-    p1PreviewView_.setSize(p2W, p2H);
+    p1PreviewView_.setSize(previewScaleH * (8.0f / 9.0f), previewScaleH);
     p1PreviewView_.setCenter(mazeW / 2.0f, mazeH / 2.0f);
     p1PreviewView_.setViewport(sf::FloatRect(0.0f, 0.0f, 0.5f, 1.0f));
 
-    p2PreviewView_.setSize(p2W, p2H);
+    p2PreviewView_.setSize(previewScaleH * (8.0f / 9.0f), previewScaleH);
     p2PreviewView_.setCenter(mazeW / 2.0f, mazeH / 2.0f);
     p2PreviewView_.setViewport(sf::FloatRect(0.5f, 0.0f, 0.5f, 1.0f));
 
@@ -763,13 +761,7 @@ void Game::render() {
                state_ == GameState::TwoPlayerPaused) {
         renderTwoPlayer();
         if (state_ == GameState::TwoPlayerPaused) {
-            window_.setView(window_.getDefaultView());
-            UI::drawPanel(window_, sf::FloatRect(0, 0, static_cast<float>(cfg::WINDOW_WIDTH), static_cast<float>(cfg::WINDOW_HEIGHT)),
-                         Theme::OverlayDim);
-            UI::drawText(window_, fontOrbitron_, "PAUSED",
-                         sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 210.0f), 48, Theme::Cyan, true);
-            twoPlayerPauseMenu_.draw(window_, fontRajdhaniBold_, fontRajdhaniMedium_,
-                                    sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 330.0f), 60.0f, 360.0f);
+            renderPause();
         }
     } else if (state_ == GameState::Generating) {
         window_.setView(window_.getDefaultView());
@@ -791,17 +783,12 @@ void Game::render() {
         renderTwoPlayerMatchOver();
     } else {
         // Single player renders
-        if (state_ == GameState::Preview) {
-            window_.setView(previewView_);
-        } else {
-            window_.setView(cameraView_);
-        }
-        renderWorld();
-
-        if (showBfsDemo_) renderBfsDemo();
-
-        window_.setView(window_.getDefaultView());
-        renderHUD();
+        window_.clear(Theme::Background);
+        bool isPreview = state_ == GameState::Preview ||
+                         (state_ == GameState::Paused && stateBeforePause_ == GameState::Preview);
+        const sf::View& camera = isPreview ? previewView_ : cameraView_;
+        drawPlayerView({0.0f, 0.0f, static_cast<float>(cfg::WINDOW_WIDTH), static_cast<float>(cfg::WINDOW_HEIGHT)},
+                       PlayerRole::Runner, player_, hunter_, camera, isPreview, false, 1);
 
         if (state_ == GameState::Paused) {
             renderPause();
@@ -819,53 +806,86 @@ void Game::render() {
     window_.display();
 }
 
-void Game::renderWorld() {
-    window_.clear(Theme::Background);
+void Game::drawPlayerView(const sf::FloatRect& rect, PlayerRole role, const Player& runner,
+                          const Hunter& hunter, const sf::View& camera, bool isPreview,
+                          bool twoPlayer, int playerNumber) {
+    sf::View view = camera;
+    view.setViewport({rect.left / cfg::WINDOW_WIDTH, rect.top / cfg::WINDOW_HEIGHT,
+                      rect.width / cfg::WINDOW_WIDTH, rect.height / cfg::WINDOW_HEIGHT});
+    window_.setView(view);
+
     float pulse = (std::sin(pulseTime_ * cfg::PULSE_SPEED) + 1.0f) * 0.5f;
-    bool isPreview = (state_ == GameState::Preview);
     if (mazeTextureReady_) window_.draw(mazeSprite_);
     renderExitPortal(pulse);
-    if (state_ != GameState::Preview) renderFog(player_);
+    if (!isPreview) renderFog(role, runner, hunter, twoPlayer);
     renderPowerUps();
 
-    sf::Vector2f playerCenter(player_.posX() + cfg::TILE_SIZE / 2.0f, player_.posY() + cfg::TILE_SIZE / 2.0f);
-    drawAnimatedPlayer(window_, playerCenter, player_.facingDr(), player_.facingDc(), player_.animFrame(), player_.isMoving(), pulse);
-
-    float blinkPhase = std::fmod(pulseTime_, cfg::HUNTER_BLINK_CYCLE);
-    bool isBlinkActive = (blinkPhase < cfg::HUNTER_BLINK_ON_TIME);
-    bool hunterInSight = player_.canSeeNow(hunter_.gridRow(), hunter_.gridCol());
-    bool hunterVisible = isPreview || (hunterInSight && isBlinkActive);
-
-    if (hunterVisible) {
-        sf::Vector2f hunterCenter(hunter_.posX() + cfg::TILE_SIZE / 2.0f, hunter_.posY() + cfg::TILE_SIZE / 2.0f);
-        bool isDormant = (roundElapsed_ < cfg::HUNTER_WAKE_TIME);
-        drawAnimatedHunter(window_, hunterCenter, hunter_.animFrame(), hunter_.isMoving(), pulse, isDormant);
+    bool runnerVisible = isPreview || role == PlayerRole::Runner;
+    if (!runnerVisible && role == PlayerRole::Hunter) {
+        bool inSight = hunter.canSeeNow(runner.gridRow(), runner.gridCol());
+        bool blipActive = twoPlayer && std::fmod(roundElapsed_, cfg::TWO_P_RUNNER_BLIP_CYCLE) < cfg::TWO_P_RUNNER_BLIP_DURATION;
+        bool pingActive = twoPlayer &&
+            ((playerNumber == 1 && p1Charge_ == PowerUpType::Ping && p1PowerTime_ > 0.0f) ||
+             (playerNumber == 2 && p2Charge_ == PowerUpType::Ping && p2PowerTime_ > 0.0f));
+        runnerVisible = inSight || blipActive || pingActive;
+        if (!twoPlayer) runnerVisible = false;
+    }
+    if (runnerVisible) {
+        sf::Vector2f center(runner.posX() + cfg::TILE_SIZE / 2.0f, runner.posY() + cfg::TILE_SIZE / 2.0f);
+        drawAnimatedPlayer(window_, center, runner.facingDr(), runner.facingDc(),
+                           runner.animFrame(), runner.isMoving(), pulse);
     }
 
-    // Precomputed radial image is stretched rather than rebuilt every frame.
-    radialGradientSprite_.setPosition(cameraView_.getCenter().x - cameraView_.getSize().x / 2.0f,
-                                      cameraView_.getCenter().y - cameraView_.getSize().y / 2.0f);
-    radialGradientSprite_.setScale(cameraView_.getSize().x / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE),
-                                   cameraView_.getSize().y / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE));
+    bool hunterVisible = isPreview || role == PlayerRole::Hunter;
+    if (!hunterVisible && role == PlayerRole::Runner) {
+        hunterVisible = runner.canSeeNow(hunter.gridRow(), hunter.gridCol());
+        if (!twoPlayer) {
+            hunterVisible = hunterVisible && std::fmod(pulseTime_, cfg::HUNTER_BLINK_CYCLE) < cfg::HUNTER_BLINK_ON_TIME;
+        }
+    }
+    if (hunterVisible) {
+        sf::Vector2f center(hunter.posX() + cfg::TILE_SIZE / 2.0f, hunter.posY() + cfg::TILE_SIZE / 2.0f);
+        bool dormant = twoPlayer
+            ? roundElapsed_ < cfg::MOVEMENT_FREEZE_TIME + cfg::TWO_P_HUNTER_RELEASE
+            : roundElapsed_ < std::max(5.0f, cfg::HUNTER_WAKE_TIME - static_cast<float>(level_ - 1));
+        drawAnimatedHunter(window_, center, hunter.animFrame(), hunter.isMoving(), pulse, dormant);
+    }
+
+    radialGradientSprite_.setPosition(view.getCenter().x - view.getSize().x / 2.0f,
+                                      view.getCenter().y - view.getSize().y / 2.0f);
+    radialGradientSprite_.setScale(view.getSize().x / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE),
+                                   view.getSize().y / static_cast<float>(cfg::RADIAL_GRADIENT_SIZE));
     if (!lowFx_) {
-        float dx = player_.posX() - hunter_.posX(), dy = player_.posY() - hunter_.posY();
-        float proximity = std::max(0.0f, 1.0f - std::sqrt(dx*dx + dy*dy) / (cfg::DANGER_DISTANCE_TILES * cfg::TILE_SIZE));
+        float dx = runner.posX() - hunter.posX(), dy = runner.posY() - hunter.posY();
+        float proximity = std::max(0.0f, 1.0f - std::sqrt(dx * dx + dy * dy) /
+                                   (cfg::DANGER_DISTANCE_TILES * cfg::TILE_SIZE));
         radialGradientSprite_.setColor(sf::Color(255, 35, 65, static_cast<sf::Uint8>(proximity * 180)));
         window_.draw(radialGradientSprite_);
     }
     radialGradientSprite_.setColor(sf::Color::White);
     window_.draw(radialGradientSprite_);
+
+    if (!twoPlayer && showBfsDemo_) renderBfsDemo();
+
+    window_.setView(window_.getDefaultView());
+    drawPlayerHud(rect, role, runner, hunter, isPreview, twoPlayer, playerNumber);
 }
 
-void Game::renderFog(const Player& viewer) {
+void Game::renderFog(PlayerRole role, const Player& runner, const Hunter& hunter, bool twoPlayer) {
     sf::VertexArray fog(sf::Quads, cfg::MAZE_ROWS * cfg::MAZE_COLS * 4);
-    const float maxDistance = static_cast<float>(cfg::FOG_VISION_RADIUS + cfg::FOG_LIGHT_CONE_EXTRA);
+    const float maxDistance = static_cast<float>(role == PlayerRole::Runner
+        ? (twoPlayer ? cfg::TWO_P_RUNNER_LOS_RADIUS : cfg::FOG_VISION_RADIUS + cfg::FOG_LIGHT_CONE_EXTRA)
+        : cfg::TWO_P_HUNTER_LOS_RADIUS);
+    const int viewerRow = role == PlayerRole::Runner ? runner.gridRow() : hunter.gridRow();
+    const int viewerCol = role == PlayerRole::Runner ? runner.gridCol() : hunter.gridCol();
     std::size_t index = 0;
     for (int r = 0; r < cfg::MAZE_ROWS; ++r) for (int c = 0; c < cfg::MAZE_COLS; ++c) {
         int alpha = 245;
-        if (viewer.isDiscovered(r,c)) alpha = 190;
-        if (viewer.canSeeNow(r,c)) {
-            float dr = static_cast<float>(r - viewer.gridRow()), dc = static_cast<float>(c - viewer.gridCol());
+        bool discovered = role == PlayerRole::Runner ? runner.isDiscovered(r, c) : hunter.isDiscovered(r, c);
+        bool visible = role == PlayerRole::Runner ? runner.canSeeNow(r, c) : hunter.canSeeNow(r, c);
+        if (discovered) alpha = 190;
+        if (visible) {
+            float dr = static_cast<float>(r - viewerRow), dc = static_cast<float>(c - viewerCol);
             alpha = static_cast<int>(std::min(145.0f, 18.0f + 125.0f * std::sqrt(dr*dr + dc*dc) / maxDistance));
         }
         sf::Color color(4, 8, 17, static_cast<sf::Uint8>(alpha));
@@ -945,159 +965,22 @@ void Game::renderPowerUps() {
 void Game::renderTwoPlayer() {
     window_.clear(Theme::Background);
 
-    bool isPreview = (state_ == GameState::TwoPlayerPreview);
+    bool isPreview = state_ == GameState::TwoPlayerPreview ||
+                     (state_ == GameState::TwoPlayerPaused && stateBeforePause_ == GameState::TwoPlayerPreview);
     PlayerRole p1Role = (twoPlayerRound_ == 1) ? PlayerRole::Runner : PlayerRole::Hunter;
     PlayerRole p2Role = (twoPlayerRound_ == 1) ? PlayerRole::Hunter : PlayerRole::Runner;
+    const sf::View& p1Camera = isPreview ? p1PreviewView_ : p1View_;
+    const sf::View& p2Camera = isPreview ? p2PreviewView_ : p2View_;
+    drawPlayerView({0.0f, 0.0f, cfg::WINDOW_WIDTH / 2.0f, static_cast<float>(cfg::WINDOW_HEIGHT)},
+                   p1Role, tpRunner_, tpHunter_, p1Camera, isPreview, true, 1);
+    drawPlayerView({cfg::WINDOW_WIDTH / 2.0f, 0.0f, cfg::WINDOW_WIDTH / 2.0f,
+                    static_cast<float>(cfg::WINDOW_HEIGHT)},
+                   p2Role, tpRunner_, tpHunter_, p2Camera, isPreview, true, 2);
 
-    // Render Left Viewport (P1)
-    window_.setView(isPreview ? p1PreviewView_ : p1View_);
-    renderTwoPlayerHalf(p1Role, isPreview);
-
-    // Render Right Viewport (P2)
-    window_.setView(isPreview ? p2PreviewView_ : p2View_);
-    renderTwoPlayerHalf(p2Role, isPreview);
-
-    // Switch back to Default View for UI / HUD
     window_.setView(window_.getDefaultView());
-    renderTwoPlayerHeaderAndHUD();
-}
-
-void Game::renderTwoPlayerHalf(PlayerRole role, bool isPreview) {
-    float pulse = (std::sin(pulseTime_ * cfg::PULSE_SPEED) + 1.0f) * 0.5f;
-    renderPowerUps();
-
-    for (int r = 0; r < cfg::MAZE_ROWS; r++) {
-        for (int c = 0; c < cfg::MAZE_COLS; c++) {
-            bool visible = isPreview;
-            if (!visible) {
-                visible = (role == PlayerRole::Runner) ? tpRunner_.isDiscovered(r, c)
-                                                       : tpHunter_.isDiscovered(r, c);
-            }
-            if (!visible) continue;
-
-            sf::Vector2f pos(static_cast<float>(c * cfg::TILE_SIZE), static_cast<float>(r * cfg::TILE_SIZE));
-            if (maze_.isWall(r, c)) {
-                sf::RectangleShape wallBase(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE), static_cast<float>(cfg::TILE_SIZE)));
-                wallBase.setPosition(pos);
-                wallBase.setFillColor(Theme::WallBase);
-                window_.draw(wallBase);
-
-                sf::RectangleShape wallCap(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE - 2), 3.0f));
-                wallCap.setPosition(pos.x + 1.0f, pos.y + 1.0f);
-                wallCap.setFillColor(role == PlayerRole::Runner ? Theme::Cyan : Theme::Crimson);
-                window_.draw(wallCap);
-            } else {
-                sf::RectangleShape pathTile(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE), static_cast<float>(cfg::TILE_SIZE)));
-                pathTile.setPosition(pos);
-                pathTile.setFillColor(Theme::PathBase);
-                window_.draw(pathTile);
-            }
-
-            if (r == maze_.exitRow() && c == maze_.exitCol()) {
-                sf::RectangleShape exitGate(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE - 4), static_cast<float>(cfg::TILE_SIZE - 4)));
-                exitGate.setPosition(pos.x + 2.0f, pos.y + 2.0f);
-                exitGate.setFillColor(sf::Color(0, static_cast<sf::Uint8>(180 + pulse * 75), 135));
-                window_.draw(exitGate);
-            }
-        }
-    }
-
-    // Runner visibility follows role, line of sight, periodic blip, and active PING.
-    bool runnerVisible = isPreview || (role == PlayerRole::Runner);
-    if (!runnerVisible && role == PlayerRole::Hunter) {
-        bool inHunterLOS = tpHunter_.canSeeNow(tpRunner_.gridRow(), tpRunner_.gridCol());
-        bool blipActive = (std::fmod(roundElapsed_, cfg::TWO_P_RUNNER_BLIP_CYCLE) < cfg::TWO_P_RUNNER_BLIP_DURATION);
-        bool pingActive = (twoPlayerRound_ == 1) ? (p2Charge_ == PowerUpType::Ping && p2PowerTime_ > 0.0f)
-                                                  : (p1Charge_ == PowerUpType::Ping && p1PowerTime_ > 0.0f);
-        runnerVisible = (inHunterLOS || blipActive || pingActive);
-    }
-
-    if (runnerVisible) {
-        sf::Vector2f runnerCenter(tpRunner_.posX() + cfg::TILE_SIZE / 2.0f, tpRunner_.posY() + cfg::TILE_SIZE / 2.0f);
-        drawAnimatedPlayer(window_, runnerCenter, tpRunner_.facingDr(), tpRunner_.facingDc(),
-                           tpRunner_.animFrame(), tpRunner_.isMoving(), pulse);
-    }
-
-    // Hunter is visible to its player or inside the runner's line of sight.
-    bool hunterVisible = isPreview || (role == PlayerRole::Hunter);
-    if (!hunterVisible && role == PlayerRole::Runner) {
-        hunterVisible = tpRunner_.canSeeNow(tpHunter_.gridRow(), tpHunter_.gridCol());
-    }
-
-    if (hunterVisible) {
-        sf::Vector2f hunterCenter(tpHunter_.posX() + cfg::TILE_SIZE / 2.0f, tpHunter_.posY() + cfg::TILE_SIZE / 2.0f);
-        bool isDormant = (roundElapsed_ < (cfg::MOVEMENT_FREEZE_TIME + cfg::TWO_P_HUNTER_RELEASE));
-        drawAnimatedHunter(window_, hunterCenter, tpHunter_.animFrame(), tpHunter_.isMoving(), pulse, isDormant);
-    }
-}
-
-void Game::renderTwoPlayerHeaderAndHUD() {
-    float midX = static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f; // 640
-
-    // 4px Center Divider
-    UI::drawPanel(window_, sf::FloatRect(midX - 2.0f, 0.0f, cfg::TWO_P_DIVIDER_WIDTH, static_cast<float>(cfg::WINDOW_HEIGHT)),
-                 Theme::Panel, Theme::PanelOutline, 1.0f);
-
-    // Left Header Strip (P1)
-    PlayerRole p1Role = (twoPlayerRound_ == 1) ? PlayerRole::Runner : PlayerRole::Hunter;
-    sf::Color p1Color = (p1Role == PlayerRole::Runner) ? Theme::Cyan : Theme::Crimson;
-    std::string p1Title = (p1Role == PlayerRole::Runner) ? "P1 - RUNNER (WASD)" : "P1 - HUNTER (WASD)";
-
-    UI::drawPanel(window_, sf::FloatRect(0.0f, 0.0f, midX - 2.0f, 44.0f),
-                 sf::Color(14, 20, 34, 235), Theme::PanelOutline, 1.0f);
-    UI::drawText(window_, fontOrbitron_, p1Title, sf::Vector2f(20.0f, 10.0f), 18, p1Color);
-
-    // Right Header Strip (P2)
-    PlayerRole p2Role = (twoPlayerRound_ == 1) ? PlayerRole::Hunter : PlayerRole::Runner;
-    sf::Color p2Color = (p2Role == PlayerRole::Runner) ? Theme::Cyan : Theme::Crimson;
-    std::string p2Title = (p2Role == PlayerRole::Runner) ? "P2 - RUNNER (ARROWS)" : "P2 - HUNTER (ARROWS)";
-
-    UI::drawPanel(window_, sf::FloatRect(midX + 2.0f, 0.0f, midX - 2.0f, 44.0f),
-                 sf::Color(14, 20, 34, 235), Theme::PanelOutline, 1.0f);
-    UI::drawText(window_, fontOrbitron_, p2Title, sf::Vector2f(midX + 20.0f, 10.0f), 18, p2Color);
-
-    // Match Header Info Badge in Center Top
-    float timeLeft = cfg::TWO_P_ROUND_TIME_LIMIT - roundElapsed_;
-    if (timeLeft < 0.0f) timeLeft = 0.0f;
-
-    std::ostringstream ssMatch;
-    ssMatch << "ROUND " << twoPlayerRound_ << " OF 2  |  TIME: " << std::fixed << std::setprecision(1) << timeLeft << "s";
-    UI::drawPanel(window_, sf::FloatRect(midX - 160.0f, 4.0f, 320.0f, 36.0f),
-                 sf::Color(8, 12, 22, 240), Theme::PanelOutline, 1.5f);
-    UI::drawText(window_, fontRajdhaniBold_, ssMatch.str(), sf::Vector2f(midX, 22.0f), 18, Theme::Text, true);
-
-    // Hunter release countdown banner
-    float hunterReleaseTime = cfg::MOVEMENT_FREEZE_TIME + cfg::TWO_P_HUNTER_RELEASE; // 7.0s
-    if (roundElapsed_ >= cfg::MOVEMENT_FREEZE_TIME && roundElapsed_ < hunterReleaseTime) {
-        float relLeft = hunterReleaseTime - roundElapsed_;
-        std::ostringstream ssRel;
-        ssRel << "HUNTER RELEASED IN " << std::fixed << std::setprecision(1) << relLeft << "s";
-
-        UI::drawPanel(window_, sf::FloatRect(midX - 180.0f, 60.0f, 360.0f, 38.0f),
-                     sf::Color(18, 25, 42, 240), Theme::Amber, 2.0f);
-        UI::drawText(window_, fontOrbitron_, ssRel.str(), sf::Vector2f(midX, 79.0f), 16, Theme::Amber, true);
-    }
-
-    // 2-Player Preview Overlay
-    if (state_ == GameState::TwoPlayerPreview) {
-        float previewLeft = cfg::MAP_PREVIEW_DURATION - roundElapsed_;
-        int digitNum = static_cast<int>(std::ceil(previewLeft));
-        if (digitNum < 1) digitNum = 1;
-
-        bool runnerCanMove = (roundElapsed_ >= cfg::MOVEMENT_FREEZE_TIME);
-        std::string statusStr = runnerCanMove ? "RUNNER UNLOCKED! RUN!" : "MEMORIZE MAZE (4s freeze)";
-
-        // Centered overlays in each half
-        float centersX[2] = {midX / 2.0f, midX + midX / 2.0f};
-        for (int i = 0; i < 2; i++) {
-            UI::drawPanel(window_, sf::FloatRect(centersX[i] - 160.0f, 290.0f, 320.0f, 140.0f),
-                         sf::Color(8, 12, 22, 235), runnerCanMove ? Theme::Green : Theme::Cyan, 2.0f);
-            UI::drawText(window_, fontOrbitron_, std::to_string(digitNum),
-                         sf::Vector2f(centersX[i], 340.0f), 54, runnerCanMove ? Theme::Green : Theme::Cyan, true);
-            UI::drawText(window_, fontRajdhaniBold_, statusStr,
-                         sf::Vector2f(centersX[i], 405.0f), 16, Theme::Text, true);
-        }
-    }
+    UI::drawPanel(window_, {cfg::WINDOW_WIDTH / 2.0f - cfg::TWO_P_DIVIDER_WIDTH / 2.0f, 0.0f,
+                            cfg::TWO_P_DIVIDER_WIDTH, static_cast<float>(cfg::WINDOW_HEIGHT)},
+                  Theme::Panel, Theme::PanelOutline, 1.0f);
 }
 
 void Game::renderTwoPlayerIntermission() {
@@ -1298,135 +1181,134 @@ void Game::renderControlsTestOverlay() {
                  sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 665.0f), 18, Theme::Cyan, true);
 }
 
-void Game::renderHUD() {
-    UI::drawPanel(window_, sf::FloatRect(0, 0, static_cast<float>(cfg::WINDOW_WIDTH), 52.0f),
-                 sf::Color(14, 20, 34, 235), Theme::PanelOutline, 1.5f);
+void Game::drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Player& runner,
+                         const Hunter& hunter, bool isPreview, bool twoPlayer, int playerNumber) {
+    constexpr float padding = 16.0f;
+    const float right = rect.left + rect.width;
+    const float bottom = rect.top + rect.height;
+    const sf::Color roleColor = role == PlayerRole::Runner ? Theme::Cyan : Theme::Crimson;
+    const std::string roleName = role == PlayerRole::Runner ? "RUNNER" : "HUNTER";
+    UI::drawPanel(window_, {rect.left, rect.top, rect.width, 48.0f},
+                  sf::Color(14, 20, 34, 235), Theme::PanelOutline, 1.5f);
+    const std::string roleLabel = (twoPlayer
+        ? "P" + std::to_string(playerNumber) + " " + roleName + (playerNumber == 1 ? " WASD" : " ARROWS")
+        : roleName);
+    UI::drawText(window_, fontOrbitron_, roleLabel,
+                 {rect.left + padding, rect.top + 14.0f}, 17, roleColor);
 
-    std::ostringstream ssTime;
-    ssTime << "TIME: " << std::fixed << std::setprecision(1) << roundElapsed_ << "s";
-    UI::drawText(window_, fontRajdhaniBold_, ssTime.str(), sf::Vector2f(30.0f, 13.0f), 22, Theme::Cyan);
-
-    std::ostringstream ssSteps;
-    ssSteps << "STEPS: " << player_.steps();
-    UI::drawText(window_, fontRajdhaniBold_, ssSteps.str(), sf::Vector2f(220.0f, 13.0f), 22, Theme::Text);
-
-    std::string hunterStatusStr;
-    sf::Color hunterStatusCol;
-    float hunterWake = std::max(5.0f, cfg::HUNTER_WAKE_TIME - static_cast<float>(level_ - 1));
-    if (roundElapsed_ < hunterWake) {
-        float left = hunterWake - roundElapsed_;
-        if (state_ == GameState::Preview) {
-            hunterStatusStr = "HUNTER: DORMANT";
-            hunterStatusCol = Theme::Amber;
-        } else {
-            std::ostringstream ssH;
-            ssH << "HUNTER AWAKENS IN " << std::fixed << std::setprecision(1) << left << "s";
-            hunterStatusStr = ssH.str();
-            hunterStatusCol = Theme::Amber;
-        }
+    std::ostringstream timer;
+    if (twoPlayer) {
+        timer << "R" << twoPlayerRound_ << "/2  TIME " << std::fixed << std::setprecision(1)
+              << std::max(0.0f, cfg::TWO_P_ROUND_TIME_LIMIT - roundElapsed_) << "s";
     } else {
-        hunterStatusStr = "HUNTER: HUNTING";
-        hunterStatusCol = Theme::Crimson;
+        timer << "TIME " << std::fixed << std::setprecision(1) << roundElapsed_ << "s  |  STEPS " << runner.steps();
     }
-    UI::drawText(window_, fontOrbitron_, hunterStatusStr,
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 25.0f), 18, hunterStatusCol, true);
+    UI::drawText(window_, fontRajdhaniBold_, timer.str(),
+                 {rect.left + rect.width * 0.50f, rect.top + 15.0f}, 18, Theme::Text, true);
 
-    std::ostringstream ssSeed;
-    ssSeed << "SEED: " << maze_.seed();
-    UI::drawText(window_, fontRajdhaniMedium_, ssSeed.str(),
-                 sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) - 180.0f, 14.0f), 20, Theme::TextDim);
+    std::string status;
+    sf::Color statusColor = Theme::TextDim;
+    if (role == PlayerRole::Hunter) {
+        float releaseAt = twoPlayer ? cfg::MOVEMENT_FREEZE_TIME + cfg::TWO_P_HUNTER_RELEASE
+                                    : std::max(5.0f, cfg::HUNTER_WAKE_TIME - static_cast<float>(level_ - 1));
+        if (roundElapsed_ < releaseAt) {
+            std::ostringstream value;
+            value << "WAKES " << std::fixed << std::setprecision(1) << releaseAt - roundElapsed_ << "s";
+            status = value.str(); statusColor = Theme::Amber;
+        } else { status = "HUNTING"; statusColor = Theme::Crimson; }
+    } else if (twoPlayer) {
+        status = "FIND THE EXIT"; statusColor = Theme::Green;
+    } else {
+        status = "SEED " + std::to_string(maze_.seed());
+    }
+    UI::drawText(window_, fontRajdhaniBold_, status,
+                 {right - padding - 68.0f, rect.top + 15.0f}, 15, statusColor, true);
+
+    const PowerUpType charge = playerNumber == 1 ? p1Charge_ : p2Charge_;
+    const float powerTime = playerNumber == 1 ? p1PowerTime_ : p2PowerTime_;
+    const char* activation = twoPlayer ? (playerNumber == 1 ? "SPACE" : "ENTER") : "SPACE";
+    const std::string powerName = charge == PowerUpType::Surge ? "SURGE" : charge == PowerUpType::Dash ? "DASH" : charge == PowerUpType::Ping ? "PING" : "EMPTY";
+    const float slotX = rect.left + padding;
+    const float slotY = bottom - 54.0f;
+    UI::drawPanel(window_, {slotX, slotY, 150.0f, 38.0f}, Theme::Panel,
+                  powerTime > 0.0f ? roleColor : Theme::PanelOutline, 2.0f);
+    UI::drawText(window_, fontRajdhaniBold_, powerName + " [" + activation + "]",
+                 {slotX + 10.0f, slotY + 10.0f}, 15, powerTime > 0.0f ? roleColor : Theme::TextDim);
+
     UI::drawText(window_, fontRajdhaniMedium_, lowFx_ ? "F2 LOW FX" : "F2 FX HIGH",
-                 sf::Vector2f(20.0f, 62.0f), 16, lowFx_ ? Theme::Amber : Theme::TextMuted);
+                 {slotX, slotY - 23.0f}, 14, lowFx_ ? Theme::Amber : Theme::TextMuted);
     if (showFps_) UI::drawText(window_, fontRajdhaniBold_, "FPS " + std::to_string(static_cast<int>(fpsAverage_)),
-                               sf::Vector2f(20.0f, 84.0f), 16, Theme::Green);
+                              {slotX + 100.0f, slotY - 23.0f}, 14, Theme::Green);
     if (toastTime_ > 0.0f) UI::drawText(window_, fontRajdhaniBold_, lowFx_ ? "LOW FX ENABLED" : "FX MODE CHANGED",
-                                        sf::Vector2f(640.0f, 82.0f), 17, Theme::Amber, true);
-    std::string powerLabel = p1Charge_ == PowerUpType::Surge ? "SURGE" : "EMPTY";
-    UI::drawPanel(window_, {20, 106, 130, 35}, Theme::Panel, p1PowerTime_ > 0 ? Theme::Cyan : Theme::PanelOutline, 2);
-    UI::drawText(window_, fontRajdhaniBold_, powerLabel + " [SPACE]", {28, 114}, 14, p1PowerTime_ > 0 ? Theme::Cyan : Theme::TextDim);
+                                        {rect.left + rect.width * 0.5f, rect.top + 62.0f}, 15, Theme::Amber, true);
 
-    float mapSize = cfg::MINIMAP_SIZE;
-    float mapX = static_cast<float>(cfg::WINDOW_WIDTH) - mapSize - cfg::MINIMAP_PADDING;
-    float mapY = static_cast<float>(cfg::WINDOW_HEIGHT) - mapSize - cfg::MINIMAP_PADDING;
+    const float mapSize = cfg::MINIMAP_SIZE;
+    const float mapX = right - mapSize - cfg::MINIMAP_PADDING;
+    const float mapY = bottom - mapSize - cfg::MINIMAP_PADDING;
+    UI::drawPanel(window_, {mapX - 4.0f, mapY - 4.0f, mapSize + 8.0f, mapSize + 8.0f},
+                  Theme::Panel, Theme::PanelOutline, 2.0f);
+    UI::drawText(window_, fontRajdhaniBold_, "MINIMAP", {mapX, mapY - 20.0f}, 14, Theme::TextMuted);
+    const float cellW = mapSize / static_cast<float>(cfg::MAZE_COLS);
+    const float cellH = mapSize / static_cast<float>(cfg::MAZE_ROWS);
+    const int viewerRow = role == PlayerRole::Runner ? runner.gridRow() : hunter.gridRow();
+    const int viewerCol = role == PlayerRole::Runner ? runner.gridCol() : hunter.gridCol();
+    auto discovered = [&](int row, int col) {
+        return role == PlayerRole::Runner ? runner.isDiscovered(row, col) : hunter.isDiscovered(row, col);
+    };
+    for (int r = 0; r < cfg::MAZE_ROWS; ++r) for (int c = 0; c < cfg::MAZE_COLS; ++c) {
+        if (!isPreview && !discovered(r, c)) continue;
+        sf::RectangleShape tile({cellW, cellH});
+        tile.setPosition(mapX + c * cellW, mapY + r * cellH);
+        tile.setFillColor(maze_.isWall(r, c) ? sf::Color(25, 35, 55) : sf::Color(10, 15, 26));
+        window_.draw(tile);
+    }
+    if (isPreview || discovered(maze_.exitRow(), maze_.exitCol())) {
+        sf::RectangleShape exit({cellW * 1.6f, cellH * 1.6f});
+        exit.setPosition(mapX + maze_.exitCol() * cellW, mapY + maze_.exitRow() * cellH);
+        exit.setFillColor(Theme::Green); window_.draw(exit);
+    }
+    sf::CircleShape marker(cellW * 0.9f);
+    marker.setOrigin(cellW * 0.9f, cellW * 0.9f);
+    marker.setPosition(mapX + (viewerCol + 0.5f) * cellW, mapY + (viewerRow + 0.5f) * cellH);
+    marker.setFillColor(roleColor); window_.draw(marker);
 
-    UI::drawPanel(window_, sf::FloatRect(mapX - 4.0f, mapY - 4.0f, mapSize + 8.0f, mapSize + 8.0f),
-                 Theme::Panel, Theme::PanelOutline, 2.0f);
-    UI::drawText(window_, fontRajdhaniBold_, "MINIMAP", sf::Vector2f(mapX, mapY - 20.0f), 14, Theme::TextMuted);
-
-    float cellW = mapSize / static_cast<float>(cfg::MAZE_COLS);
-    float cellH = mapSize / static_cast<float>(cfg::MAZE_ROWS);
-    bool isPreview = (state_ == GameState::Preview);
-
-    for (int r = 0; r < cfg::MAZE_ROWS; r++) {
-        for (int c = 0; c < cfg::MAZE_COLS; c++) {
-            if (!isPreview && !player_.isDiscovered(r, c)) continue;
-
-            sf::RectangleShape mTile(sf::Vector2f(cellW, cellH));
-            mTile.setPosition(mapX + static_cast<float>(c) * cellW, mapY + static_cast<float>(r) * cellH);
-            if (maze_.isWall(r, c)) {
-                mTile.setFillColor(sf::Color(25, 35, 55));
-            } else {
-                mTile.setFillColor(sf::Color(10, 15, 26));
-            }
-            window_.draw(mTile);
+    bool opponentVisible = isPreview;
+    int opponentRow = role == PlayerRole::Runner ? hunter.gridRow() : runner.gridRow();
+    int opponentCol = role == PlayerRole::Runner ? hunter.gridCol() : runner.gridCol();
+    if (!opponentVisible) {
+        opponentVisible = role == PlayerRole::Runner
+            ? runner.canSeeNow(opponentRow, opponentCol)
+            : hunter.canSeeNow(opponentRow, opponentCol);
+        if (role == PlayerRole::Hunter && twoPlayer) {
+            opponentVisible = opponentVisible ||
+                std::fmod(roundElapsed_, cfg::TWO_P_RUNNER_BLIP_CYCLE) < cfg::TWO_P_RUNNER_BLIP_DURATION ||
+                (playerNumber == 1 ? p1Charge_ == PowerUpType::Ping && p1PowerTime_ > 0.0f
+                                   : p2Charge_ == PowerUpType::Ping && p2PowerTime_ > 0.0f);
+        }
+        if (role == PlayerRole::Runner && !twoPlayer) {
+            opponentVisible = opponentVisible &&
+                std::fmod(pulseTime_, cfg::HUNTER_BLINK_CYCLE) < cfg::HUNTER_BLINK_ON_TIME;
         }
     }
-
-    if (isPreview || player_.isDiscovered(maze_.exitRow(), maze_.exitCol())) {
-        sf::RectangleShape exitMarker(sf::Vector2f(cellW * 1.6f, cellH * 1.6f));
-        exitMarker.setPosition(mapX + static_cast<float>(maze_.exitCol()) * cellW,
-                               mapY + static_cast<float>(maze_.exitRow()) * cellH);
-        exitMarker.setFillColor(Theme::Green);
-        window_.draw(exitMarker);
+    if (opponentVisible) {
+        marker.setPosition(mapX + (opponentCol + 0.5f) * cellW, mapY + (opponentRow + 0.5f) * cellH);
+        marker.setFillColor(role == PlayerRole::Runner ? Theme::Crimson : Theme::Cyan);
+        window_.draw(marker);
     }
 
-    sf::CircleShape pDot(cellW * 0.9f);
-    pDot.setOrigin(cellW * 0.9f, cellW * 0.9f);
-    pDot.setPosition(mapX + (static_cast<float>(player_.gridCol()) + 0.5f) * cellW,
-                     mapY + (static_cast<float>(player_.gridRow()) + 0.5f) * cellH);
-    pDot.setFillColor(Theme::Cyan);
-    window_.draw(pDot);
-
-    float blinkPhase = std::fmod(pulseTime_, cfg::HUNTER_BLINK_CYCLE);
-    bool isBlinkActive = (blinkPhase < cfg::HUNTER_BLINK_ON_TIME);
-    bool hunterInSight = player_.canSeeNow(hunter_.gridRow(), hunter_.gridCol());
-    if (isPreview || (hunterInSight && isBlinkActive)) {
-        sf::CircleShape hDot(cellW * 0.9f);
-        hDot.setOrigin(cellW * 0.9f, cellW * 0.9f);
-        hDot.setPosition(mapX + (static_cast<float>(hunter_.gridCol()) + 0.5f) * cellW,
-                         mapY + (static_cast<float>(hunter_.gridRow()) + 0.5f) * cellH);
-        hDot.setFillColor(Theme::Crimson);
-        window_.draw(hDot);
-    }
-
-    if (state_ == GameState::Preview) {
-        float previewLeft = cfg::MAP_PREVIEW_DURATION - roundElapsed_;
+    if (isPreview) {
+        const float previewLeft = std::max(0.0f, cfg::MAP_PREVIEW_DURATION - roundElapsed_);
         if (previewLeft > 0.0f) {
-            int digitNum = static_cast<int>(std::ceil(previewLeft));
-            if (digitNum < 1) digitNum = 1;
-
-            bool playerCanMove = (roundElapsed_ >= cfg::MOVEMENT_FREEZE_TIME);
-            sf::Color accentColor = playerCanMove ? Theme::Green : Theme::Cyan;
-
-            UI::drawPanel(window_, sf::FloatRect(440.0f, 260.0f, 400.0f, 190.0f),
-                         sf::Color(8, 12, 22, 235), accentColor, 2.5f);
-
-            UI::drawText(window_, fontOrbitron_, std::to_string(digitNum),
-                         sf::Vector2f(640.0f, 325.0f), 76, accentColor, true);
-
-            std::string statusText;
-            if (!playerCanMove) {
-                std::ostringstream ss;
-                ss << "MEMORIZE MAZE (Move unlocks in " << std::fixed << std::setprecision(1) << (cfg::MOVEMENT_FREEZE_TIME - roundElapsed_) << "s)";
-                statusText = ss.str();
-            } else {
-                std::ostringstream ss;
-                ss << "MOVE UNLOCKED! RUN! (Fog falls in " << std::fixed << std::setprecision(1) << previewLeft << "s)";
-                statusText = ss.str();
-            }
-
-            UI::drawText(window_, fontRajdhaniBold_, statusText,
-                         sf::Vector2f(640.0f, 415.0f), 18, Theme::Text, true);
+            const bool unlocked = roundElapsed_ >= cfg::MOVEMENT_FREEZE_TIME;
+            const sf::Color accent = unlocked ? Theme::Green : Theme::Cyan;
+            const float panelW = std::min(360.0f, rect.width - 2.0f * padding);
+            const float panelX = rect.left + (rect.width - panelW) / 2.0f;
+            const float panelY = rect.top + rect.height * 0.38f;
+            UI::drawPanel(window_, {panelX, panelY, panelW, 140.0f}, sf::Color(8, 12, 22, 235), accent, 2.5f);
+            UI::drawText(window_, fontOrbitron_, std::to_string(static_cast<int>(std::ceil(previewLeft))),
+                         {rect.left + rect.width / 2.0f, panelY + 48.0f}, 54, accent, true);
+            UI::drawText(window_, fontRajdhaniBold_, unlocked ? "MOVE UNLOCKED - RUN" : "MEMORIZE THE MAZE",
+                         {rect.left + rect.width / 2.0f, panelY + 112.0f}, 17, Theme::Text, true);
         }
     }
 }
@@ -1537,8 +1419,9 @@ void Game::renderPause() {
     UI::drawText(window_, fontOrbitron_, "PAUSED",
                  sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 210.0f), 48, Theme::Cyan, true);
 
-    pauseMenu_.draw(window_, fontRajdhaniBold_, fontRajdhaniMedium_,
-                    sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 330.0f), 60.0f, 360.0f);
+    UI::MenuList& menu = state_ == GameState::TwoPlayerPaused ? twoPlayerPauseMenu_ : pauseMenu_;
+    menu.draw(window_, fontRajdhaniBold_, fontRajdhaniMedium_,
+              sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) / 2.0f, 330.0f), 60.0f, 360.0f);
 }
 
 void Game::renderGameOver() {

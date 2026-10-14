@@ -75,9 +75,12 @@ private:
     void loadFonts();
     bool tryLoadFont(sf::Font& font, const std::string& assetPath, const std::vector<std::string>& fallbacks);
 
-    // Single Player renders
-    void renderWorld();
-    void renderHUD();
+    // Shared player view rendering
+    void drawPlayerView(const sf::FloatRect& rect, PlayerRole role, const Player& runner,
+                        const Hunter& hunter, const sf::View& camera, bool isPreview,
+                        bool twoPlayer, int playerNumber);
+    void drawPlayerHud(const sf::FloatRect& rect, PlayerRole role, const Player& runner,
+                       const Hunter& hunter, bool isPreview, bool twoPlayer, int playerNumber);
     void renderMenu();
     void renderLeaderboard();
     void renderHowToPlay();
@@ -89,7 +92,7 @@ private:
     void finishGeneratedRound();
     void rebuildMazeTexture();
     void buildRadialGradient();
-    void renderFog(const Player& viewer);
+    void renderFog(PlayerRole role, const Player& runner, const Hunter& hunter, bool twoPlayer);
     void renderExitPortal(float pulse);
     void spawnPowerUps(bool twoPlayer);
     void updatePowerUps(float dt, bool twoPlayer);
@@ -99,8 +102,6 @@ private:
     // Two Player renders
     void updateTwoPlayer(float dt);
     void renderTwoPlayer();
-    void renderTwoPlayerHalf(PlayerRole role, bool isPreview);
-    void renderTwoPlayerHeaderAndHUD();
     void renderTwoPlayerIntermission();
     void renderTwoPlayerMatchOver();
 
