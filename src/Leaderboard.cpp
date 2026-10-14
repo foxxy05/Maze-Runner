@@ -1,130 +1,85 @@
 #include "Leaderboard.h"
+#include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <iostream>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
-Leaderboard::Leaderboard() : tree_(), nextId_(1), filePath_("leaderboard.txt") {
-    loadFromFile(filePath_);
+inline bool LeaderboardCompare::operator()(const LeaderboardEntry& a, const LeaderboardEntry& b) const {
+    if (a.score != b.score) return a.score < b.score;
+    if (a.name != b.name) return a.name > b.name;
+    return a.insertionId > b.insertionId;
 }
 
-Leaderboard::Leaderboard(const std::string& filename) : tree_(), nextId_(1), filePath_(filename) {
-    loadFromFile(filePath_);
+inline Leaderboard::Leaderboard() {
+    load();
 }
 
-void Leaderboard::addEntry(const std::string& name, int score, const std::string& mode, const std::string& detail) {
-    std::string safeName = name;
-    if (safeName.length() > 10) {
-        safeName = safeName.substr(0, 10);
+inline std::string Leaderboard::filePath() const {
+#ifdef _WIN32
+    char path[MAX_PATH] = {};
+    DWORD length = GetModuleFileNameA(nullptr, path, MAX_PATH);
+    if (length > 0 && length < MAX_PATH) {
+        std::string executable(path);
+        size_t slash = executable.find_last_of("\\/");
+        return (slash == std::string::npos) ? "leaderboard.txt" : executable.substr(0, slash + 1) + "leaderboard.txt";
     }
-    if (safeName.empty()) {
-        safeName = "RUNNER";
-    }
-
-    LeaderboardEntry entry;
-    entry.name = safeName;
-    entry.score = score;
-    entry.mode = mode;
-    entry.detail = detail;
-    entry.id = nextId_++;
-
-    tree_.insert(entry);
-    saveToFile(filePath_);
+#endif
+    return "leaderboard.txt";
 }
 
-std::vector<LeaderboardEntry> Leaderboard::getTop(int count) const {
-    std::vector<LeaderboardEntry> list;
-    tree_.reverseInorder([&](const LeaderboardEntry& entry) {
-        if (static_cast<int>(list.size()) < count) {
-            list.push_back(entry);
-        }
-    });
-    return list;
-}
-
-std::vector<LeaderboardEntry> Leaderboard::getInorderList() const {
-    std::vector<LeaderboardEntry> list;
-    tree_.inorder([&](const LeaderboardEntry& entry) {
-        list.push_back(entry);
-    });
-    return list;
-}
-
-std::vector<LeaderboardEntry> Leaderboard::getPreorderList() const {
-    std::vector<LeaderboardEntry> list;
-    tree_.preorder([&](const LeaderboardEntry& entry) {
-        list.push_back(entry);
-    });
-    return list;
-}
-
-std::vector<LeaderboardEntry> Leaderboard::getPostorderList() const {
-    std::vector<LeaderboardEntry> list;
-    tree_.postorder([&](const LeaderboardEntry& entry) {
-        list.push_back(entry);
-    });
-    return list;
-}
-
-void Leaderboard::saveToFile(const std::string& filename) const {
-    std::ofstream out(filename);
-    if (!out.is_open()) {
-        std::cerr << "[WARNING] Could not open " << filename << " to save leaderboard." << std::endl;
-        return;
-    }
-
-    // Save in PRE-ORDER traversal so reloading reproduces the exact same BST tree shape!
-    tree_.preorder([&](const LeaderboardEntry& e) {
-        out << e.name << "\t"
-            << e.score << "\t"
-            << e.mode << "\t"
-            << e.detail << "\t"
-            << e.id << "\n";
-    });
-}
-
-void Leaderboard::loadFromFile(const std::string& filename) {
-    std::ifstream in(filename);
-    if (!in.is_open()) {
-        // If file doesn't exist yet, seed with a few fun default high scores!
-        addEntry("CIPHER", 1550, "SP", "Escape 22.0s");
-        addEntry("NEO", 1480, "SP", "Escape 25.4s");
-        addEntry("TRINITY", 1390, "SP", "Escape 28.2s");
-        addEntry("MORPHEUS", 1310, "SP", "Escape 31.0s");
-        addEntry("GHOST", 1120, "2P", "P1 Win 34.5s");
-        return;
-    }
-
-    tree_.clear();
-    nextId_ = 1;
-
+inline void Leaderboard::load() {
+    entries_.clear();
+    nextInsertionId_ = 1;
+    std::ifstream input(filePath());
     std::string line;
-    while (std::getline(in, line)) {
-        if (line.empty()) continue;
-        std::istringstream iss(line);
-        std::string name, scoreStr, mode, detail, idStr;
-
-        if (std::getline(iss, name, '\t') &&
-            std::getline(iss, scoreStr, '\t') &&
-            std::getline(iss, mode, '\t') &&
-            std::getline(iss, detail, '\t') &&
-            std::getline(iss, idStr, '\t')) {
-
-            LeaderboardEntry entry;
-            entry.name = name;
-            try {
-                entry.score = std::stoi(scoreStr);
-                entry.id = std::stoull(idStr);
-            } catch (...) {
-                continue;
-            }
-            entry.mode = mode;
-            entry.detail = detail;
-
-            if (entry.id >= nextId_) {
-                nextId_ = entry.id + 1;
-            }
-
-            tree_.insert(entry);
-        }
+    while (std::getline(input, line)) {
+        std::istringstream row(line);
+        LeaderboardEntry entry;
+        std::string scoreText, idText;
+        if (!std::getline(row, entry.name, '\t') || !std::getline(row, scoreText, '\t') ||
+            !std::getline(row, entry.mode, '\t') || !std::getline(row, entry.detail, '\t') ||
+            !std::getline(row, idText)) continue;
+        try {
+            entry.score = std::stoi(scoreText);
+            entry.insertionId = std::stoull(idText);
+        } catch (...) { continue; }
+        entry.name = entry.name.substr(0, 10);
+        entries_.insert(entry); // File is pre-order, preserving the exact BST shape.
+        nextInsertionId_ = std::max(nextInsertionId_, entry.insertionId + 1);
     }
+}
+
+inline bool Leaderboard::save() const {
+    std::ofstream output(filePath(), std::ios::trunc);
+    if (!output) return false;
+    entries_.preorder([&output](const LeaderboardEntry& entry) {
+        output << entry.name << '\t' << entry.score << '\t' << entry.mode << '\t'
+               << entry.detail << '\t' << entry.insertionId << '\n';
+    });
+    return static_cast<bool>(output);
+}
+
+inline void Leaderboard::add(std::string name, int score, const std::string& mode, const std::string& detail) {
+    name.erase(std::remove_if(name.begin(), name.end(), [](char c) { return c == '\t' || c == '\n' || c == '\r'; }), name.end());
+    if (name.empty()) name = "PLAYER";
+    entries_.insert({name.substr(0, 10), score, mode, detail, nextInsertionId_++});
+    save();
+}
+
+inline std::vector<LeaderboardEntry> Leaderboard::top(int limit) const {
+    std::vector<LeaderboardEntry> results;
+    entries_.reverseInorder([&results, limit](const LeaderboardEntry& entry) {
+        if (static_cast<int>(results.size()) < limit) results.push_back(entry);
+    });
+    return results;
+}
+
+inline std::vector<LeaderboardEntry> Leaderboard::traversal(int order) const {
+    std::vector<LeaderboardEntry> results;
+    if (order == 2) entries_.preorder([&results](const LeaderboardEntry& entry) { results.push_back(entry); });
+    else if (order == 3) entries_.postorder([&results](const LeaderboardEntry& entry) { results.push_back(entry); });
+    else entries_.inorder([&results](const LeaderboardEntry& entry) { results.push_back(entry); });
+    return results;
 }

@@ -1,49 +1,38 @@
 #pragma once
-#include "dsa_lib/BST.h"
 #include <string>
 #include <vector>
+#include "dsa_lib/BST.h"
 
 struct LeaderboardEntry {
-    std::string name;    // max 10 chars
+    std::string name;
     int score = 0;
-    std::string mode;    // "SP" or "2P"
-    std::string detail;  // e.g. "Escape 32.5s"
-    unsigned long long id = 0;
+    std::string mode;
+    std::string detail;
+    unsigned long long insertionId = 0;
 };
 
-// Standard comparator: order by score ascending, then name, then id.
-// With this comparator, reverseInorder visits from highest score to lowest score.
-struct EntryComparator {
-    bool operator()(const LeaderboardEntry& a, const LeaderboardEntry& b) const {
-        if (a.score != b.score) return a.score < b.score;
-        if (a.name != b.name) return a.name < b.name;
-        return a.id < b.id;
-    }
+struct LeaderboardCompare {
+    // Ascending tree order; reverse in-order is score descending, name ascending, id ascending.
+    bool operator()(const LeaderboardEntry& a, const LeaderboardEntry& b) const;
 };
 
 class Leaderboard {
 public:
     Leaderboard();
-    explicit Leaderboard(const std::string& filename);
 
-    void addEntry(const std::string& name, int score, const std::string& mode, const std::string& detail);
+    void load();
+    bool save() const;
+    void add(std::string name, int score, const std::string& mode, const std::string& detail);
 
-    std::vector<LeaderboardEntry> getTop(int count = 10) const;
-    std::vector<LeaderboardEntry> getInorderList() const;
-    std::vector<LeaderboardEntry> getPreorderList() const;
-    std::vector<LeaderboardEntry> getPostorderList() const;
-
-    int size() const { return tree_.size(); }
-    int height() const { return tree_.height(); }
-    bool empty() const { return tree_.empty(); }
-
-    const dsa_lib::BST<LeaderboardEntry, EntryComparator>& getTree() const { return tree_; }
-
-    void saveToFile(const std::string& filename = "leaderboard.txt") const;
-    void loadFromFile(const std::string& filename = "leaderboard.txt");
+    const dsa_lib::BST<LeaderboardEntry, LeaderboardCompare>& tree() const { return entries_; }
+    std::vector<LeaderboardEntry> top(int limit = 10) const;
+    std::vector<LeaderboardEntry> traversal(int order) const; // 1=in, 2=pre, 3=post
 
 private:
-    dsa_lib::BST<LeaderboardEntry, EntryComparator> tree_;
-    unsigned long long nextId_ = 1;
-    std::string filePath_ = "leaderboard.txt";
+    std::string filePath() const;
+    dsa_lib::BST<LeaderboardEntry, LeaderboardCompare> entries_;
+    unsigned long long nextInsertionId_ = 1;
 };
+
+// Header-visible implementation keeps this small component usable by the existing explicit source list.
+#include "Leaderboard.cpp"

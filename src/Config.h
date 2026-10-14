@@ -34,6 +34,12 @@ constexpr int PATH_TILE = 0;
 constexpr int STEP_DIST = 2;
 constexpr float BRAID_PERCENT = 0.18f;
 constexpr int NUM_DIRECTIONS = 4;
+constexpr float GENERATION_DFS_SECONDS = 4.0f;
+constexpr float GENERATION_BRAID_SECONDS = 0.8f;
+constexpr int GENERATION_STACK_VISIBLE = 12;
+constexpr float BFS_DEMO_WAVE_SECONDS = 1.2f;
+constexpr int GENERATION_DFS_STEPS_PER_FRAME = 6;
+constexpr int GENERATION_BRAID_STEPS_PER_FRAME = 1;
 
 // Speeds (Cells per second)
 constexpr float PLAYER_CELLS_PER_SEC = 7.0f;

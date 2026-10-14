@@ -6,6 +6,7 @@
 #include "Pathfinder.h"
 #include "DirectionInput.h"
 #include "UI.h"
+#include "Leaderboard.h"
 #include "Config.h"
 #include <string>
 
@@ -20,6 +21,8 @@ enum class GameState {
     TwoPlayerPaused,
     TwoPlayerIntermission,
     TwoPlayerMatchOver
+    , Generating
+    , NameEntry
 };
 
 enum class MenuSubScreen {
@@ -76,6 +79,10 @@ private:
     void renderHowToPlay();
     void renderPause();
     void renderGameOver();
+    void renderGeneration();
+    void renderNameEntry();
+    void renderBfsDemo();
+    void finishGeneratedRound();
 
     // Two Player renders
     void updateTwoPlayer(float dt);
@@ -125,6 +132,17 @@ private:
     GameState stateBeforePause_ = GameState::Playing;
     MenuSubScreen subScreen_ = MenuSubScreen::Main;
     bool showControlsTest_ = false;
+    bool showBfsDemo_ = false;
+    float bfsDemoElapsed_ = 0.0f;
+    unsigned long long shownBfsRevision_ = 0;
+    float generationSpeed_ = 1.0f;
+    bool generationForTwoPlayer_ = false;
+    bool pendingNameIsTwoPlayer_ = false;
+    std::string enteredName_;
+    int pendingScore_ = 0;
+    std::string pendingDetail_;
+    Leaderboard leaderboard_;
+    int leaderboardTraversal_ = 1;
 
     // Single Player variables
     bool won_ = false;

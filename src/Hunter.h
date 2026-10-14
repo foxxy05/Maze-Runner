@@ -1,5 +1,6 @@
 #pragma once
 #include "Maze.h"
+#include "Pathfinder.h"
 #include "Config.h"
 #include "GridMover.h"
 #include <vector>
@@ -40,6 +41,8 @@ public:
         cellsMovedLastSecond_ = 0;
         return moved;
     }
+    const BfsResult& latestBfs() const { return latestBfs_; }
+    unsigned long long bfsRevision() const { return bfsRevision_; }
 
 private:
     GridMover mover_;
@@ -50,4 +53,6 @@ private:
 
     std::vector<std::vector<bool>> discovered_;
     std::vector<std::vector<bool>> visibleNow_;
+    BfsResult latestBfs_{};
+    unsigned long long bfsRevision_ = 0;
 };

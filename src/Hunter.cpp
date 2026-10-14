@@ -19,6 +19,8 @@ Hunter::Hunter(int startR, int startC, int cellW, int cellH, float cellsPerSec)
 void Hunter::step(const Maze& maze, int playerR, int playerC) {
     if (mover_.gridRow() == playerR && mover_.gridCol() == playerC) return;
     BfsResult res = Pathfinder::findPath(maze, {mover_.gridRow(), mover_.gridCol()}, {playerR, playerC});
+    latestBfs_ = res;
+    ++bfsRevision_;
     if (res.found && res.path.size() >= 2) {
         mover_.setTargetCell(res.path[1].first, res.path[1].second);
     }
@@ -33,6 +35,8 @@ void Hunter::update(float dt, const Maze& maze, int playerR, int playerC, bool i
     if (mover_.isAtCellCenter()) {
         if (mover_.gridRow() != playerR || mover_.gridCol() != playerC) {
             BfsResult res = Pathfinder::findPath(maze, {mover_.gridRow(), mover_.gridCol()}, {playerR, playerC});
+            latestBfs_ = res;
+            ++bfsRevision_;
             if (res.found && res.path.size() >= 2) {
                 mover_.setTargetCell(res.path[1].first, res.path[1].second);
             }
@@ -48,6 +52,8 @@ void Hunter::update(float dt, const Maze& maze, int playerR, int playerC, bool i
             // Chain next cell immediately at cell center
             if (mover_.gridRow() != playerR || mover_.gridCol() != playerC) {
                 BfsResult res = Pathfinder::findPath(maze, {mover_.gridRow(), mover_.gridCol()}, {playerR, playerC});
+                latestBfs_ = res;
+                ++bfsRevision_;
                 if (res.found && res.path.size() >= 2) {
                     mover_.setTargetCell(res.path[1].first, res.path[1].second);
                 }

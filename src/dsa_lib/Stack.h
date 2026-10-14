@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <utility>
+#include <vector>
 
 namespace dsa_lib {
 
@@ -93,6 +94,19 @@ public:
 
     int size() const {
         return count;
+    }
+
+    // DSA CORE: Non-mutating top-to-bottom snapshot for visualizing LIFO state.
+    std::vector<T> topEntries(int maxEntries) const {
+        std::vector<T> entries;
+        if (maxEntries <= 0) return entries;
+        entries.reserve(maxEntries < count ? maxEntries : count);
+        Node* current = topNode;
+        while (current && static_cast<int>(entries.size()) < maxEntries) {
+            entries.push_back(current->data);
+            current = current->next;
+        }
+        return entries;
     }
 
     void clear() {
