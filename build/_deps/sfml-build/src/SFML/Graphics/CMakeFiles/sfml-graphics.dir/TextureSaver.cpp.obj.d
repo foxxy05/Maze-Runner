@@ -1,10 +1,10 @@
 _deps/sfml-build/src/SFML/Graphics/CMakeFiles/sfml-graphics.dir/TextureSaver.cpp.obj: \
- G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\_deps\sfml-src\src\SFML\Graphics\TextureSaver.cpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/src/SFML/Graphics/TextureSaver.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/src/SFML/Graphics/GLCheck.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Config.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/src/SFML/Graphics/GLExtensions.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/extlibs/headers/glad/include/glad/gl.h \
+ G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\_deps\sfml-src\src\SFML\Graphics\TextureSaver.cpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/src/SFML/Graphics/TextureSaver.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/src/SFML/Graphics/GLCheck.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Config.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/src/SFML/Graphics/GLExtensions.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/extlibs/headers/glad/include/glad/gl.h \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\stdint.h \
  c:\mingw\include\stdint.h c:\mingw\include\_mingw.h \
  c:\mingw\include\msvcrtver.h c:\mingw\include\w32api.h \

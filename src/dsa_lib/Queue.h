@@ -1,4 +1,6 @@
 #pragma once
+#include <cassert>
+#include <utility>
 
 namespace dsa_lib {
 
@@ -19,6 +21,47 @@ private:
 public:
     Queue() : headNode(nullptr), tailNode(nullptr), count(0) {}
     ~Queue() { clear(); }
+
+    // Rule of 5: Copy Constructor
+    Queue(const Queue& other) : headNode(nullptr), tailNode(nullptr), count(0) {
+        Node* src = other.headNode;
+        while (src) {
+            push(src->data);
+            src = src->next;
+        }
+    }
+
+    // Rule of 5: Move Constructor
+    Queue(Queue&& other) noexcept : headNode(other.headNode), tailNode(other.tailNode), count(other.count) {
+        other.headNode = nullptr;
+        other.tailNode = nullptr;
+        other.count = 0;
+    }
+
+    // Rule of 5: Copy Assignment
+    Queue& operator=(const Queue& other) {
+        if (this != &other) {
+            Queue temp(other);
+            std::swap(headNode, temp.headNode);
+            std::swap(tailNode, temp.tailNode);
+            std::swap(count, temp.count);
+        }
+        return *this;
+    }
+
+    // Rule of 5: Move Assignment
+    Queue& operator=(Queue&& other) noexcept {
+        if (this != &other) {
+            clear();
+            headNode = other.headNode;
+            tailNode = other.tailNode;
+            count = other.count;
+            other.headNode = nullptr;
+            other.tailNode = nullptr;
+            other.count = 0;
+        }
+        return *this;
+    }
 
     void push(T val) {
         Node* n = new Node(val);
@@ -41,10 +84,12 @@ public:
     }
 
     T& front() {
+        assert(!empty() && "Queue::front() called on empty queue");
         return headNode->data;
     }
 
     const T& front() const {
+        assert(!empty() && "Queue::front() const called on empty queue");
         return headNode->data;
     }
 

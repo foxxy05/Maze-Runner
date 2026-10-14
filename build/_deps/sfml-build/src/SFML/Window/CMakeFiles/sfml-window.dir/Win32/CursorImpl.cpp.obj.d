@@ -1,13 +1,13 @@
 _deps/sfml-build/src/SFML/Window/CMakeFiles/sfml-window.dir/Win32/CursorImpl.cpp.obj: \
- G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\_deps\sfml-src\src\SFML\Window\Win32\CursorImpl.cpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/src/SFML/Window/Win32/CursorImpl.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Window/Cursor.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Window/Export.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Config.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/NonCopyable.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/Export.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/Vector2.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/Vector2.inl \
+ G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\_deps\sfml-src\src\SFML\Window\Win32\CursorImpl.cpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/src/SFML/Window/Win32/CursorImpl.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Window/Cursor.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Window/Export.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Config.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/NonCopyable.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/Export.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/Vector2.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/Vector2.inl \
  c:\mingw\include\windows.h \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\stdarg.h \
  c:\mingw\include\windef.h c:\mingw\include\w32api.h \
@@ -48,7 +48,7 @@ _deps/sfml-build/src/SFML/Window/CMakeFiles/sfml-window.dir/Win32/CursorImpl.cpp
  c:\mingw\include\cguid.h c:\mingw\include\olectlid.h \
  c:\mingw\include\oleauto.h c:\mingw\include\oaidl.h \
  c:\mingw\include\oleidl.h \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/Err.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/Err.hpp \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\ostream \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\ios \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\iosfwd \

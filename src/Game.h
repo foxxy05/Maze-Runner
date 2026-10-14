@@ -1,0 +1,157 @@
+#pragma once
+#include <SFML/Graphics.hpp>
+#include "Maze.h"
+#include "Player.h"
+#include "Hunter.h"
+#include "Pathfinder.h"
+#include "DirectionInput.h"
+#include "UI.h"
+#include "Config.h"
+#include <string>
+
+enum class GameState {
+    Menu,
+    Preview,
+    Playing,
+    Paused,
+    GameOver,
+    TwoPlayerPreview,
+    TwoPlayerPlaying,
+    TwoPlayerPaused,
+    TwoPlayerIntermission,
+    TwoPlayerMatchOver
+};
+
+enum class MenuSubScreen {
+    Main,
+    Leaderboard,
+    HowToPlay,
+    ControlsTest
+};
+
+enum class PlayerRole {
+    Runner,
+    Hunter
+};
+
+enum class RoundOutcome {
+    Escape,
+    Caught,
+    TimeOut
+};
+
+struct TwoPlayerRoundData {
+    RoundOutcome outcome = RoundOutcome::TimeOut;
+    float time = 0.0f;
+    int runnerScore = 0;
+    int hunterScore = 0;
+    int p1Score = 0;
+    int p2Score = 0;
+    float p1EscapeTime = -1.0f;
+    float p2EscapeTime = -1.0f;
+};
+
+class Game {
+public:
+    explicit Game(unsigned int seed = 0);
+
+    void run();
+
+private:
+    void processEvents();
+    void update(float dt);
+    void render();
+
+    void resetRound(unsigned int seed = 0);
+    void startTwoPlayerMatch(unsigned int seed = 0);
+    void startTwoPlayerRound(int roundNum);
+    void loadFonts();
+    bool tryLoadFont(sf::Font& font, const std::string& assetPath, const std::vector<std::string>& fallbacks);
+
+    // Single Player renders
+    void renderWorld();
+    void renderHUD();
+    void renderMenu();
+    void renderLeaderboard();
+    void renderHowToPlay();
+    void renderPause();
+    void renderGameOver();
+
+    // Two Player renders
+    void updateTwoPlayer(float dt);
+    void renderTwoPlayer();
+    void renderTwoPlayerHalf(int playerNum, PlayerRole role, const sf::View& view, bool isPreview);
+    void renderTwoPlayerHeaderAndHUD();
+    void renderTwoPlayerIntermission();
+    void renderTwoPlayerMatchOver();
+
+    // Controls test overlay (F1 in any state)
+    void renderControlsTestOverlay();
+
+    // Window & Views
+    sf::RenderWindow window_;
+    sf::View cameraView_;
+    sf::View previewView_;
+    sf::Vector2f cameraPos_{0.0f, 0.0f};
+
+    // 2-Player Views
+    sf::View p1View_;
+    sf::View p2View_;
+    sf::View p1PreviewView_;
+    sf::View p2PreviewView_;
+    sf::Vector2f p1CameraPos_{0.0f, 0.0f};
+    sf::Vector2f p2CameraPos_{0.0f, 0.0f};
+
+    // Fonts
+    sf::Font fontOrbitron_;
+    sf::Font fontRajdhaniMedium_;
+    sf::Font fontRajdhaniBold_;
+
+    // Single Player Entities
+    Maze maze_;
+    Player player_;
+    Hunter hunter_;
+
+    // Two Player Entities
+    Player tpRunner_;
+    Hunter tpHunter_;
+
+    // Directional Inputs (Bound to players, never roles)
+    DirectionInput wasdInput_;   // P1 = WASD always
+    DirectionInput arrowInput_;  // P2 = Arrow keys always
+
+    // States
+    GameState state_ = GameState::Menu;
+    GameState stateBeforePause_ = GameState::Playing;
+    MenuSubScreen subScreen_ = MenuSubScreen::Main;
+    bool showControlsTest_ = false;
+
+    // Single Player variables
+    bool won_ = false;
+    unsigned int initialSeed_ = 0;
+    float roundElapsed_ = 0.0f;
+    float pulseTime_ = 0.0f;
+    float menuTime_ = 0.0f;
+    float debugTimer_ = 0.0f;
+
+    // Movement tracking for debug logging
+    int playerLastGridR_ = 1;
+    int playerLastGridC_ = 1;
+    int playerCellsThisSec_ = 0;
+
+    int finalSteps_ = 0;
+    float finalTime_ = 0.0f;
+
+    // Two Player Match Data
+    unsigned int twoPlayerMatchSeed_ = 0;
+    int twoPlayerRound_ = 1; // 1 or 2
+    TwoPlayerRoundData round1Data_;
+    TwoPlayerRoundData round2Data_;
+
+    // Menu components
+    UI::MenuList mainMenu_;
+    UI::MenuList pauseMenu_;
+    UI::MenuList gameOverMenu_;
+    UI::MenuList twoPlayerPauseMenu_;
+    UI::MenuList twoPlayerMatchOverMenu_;
+};

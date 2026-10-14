@@ -1,8 +1,8 @@
 _deps/sfml-build/src/SFML/Graphics/CMakeFiles/sfml-graphics.dir/Color.cpp.obj: \
- G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\_deps\sfml-src\src\SFML\Graphics\Color.cpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Graphics/Color.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Graphics/Export.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Config.hpp \
+ G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\_deps\sfml-src\src\SFML\Graphics\Color.cpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Graphics/Color.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Graphics/Export.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Config.hpp \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\algorithm \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\utility \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\mingw32\bits\c++config.h \

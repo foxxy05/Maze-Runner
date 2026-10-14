@@ -20,8 +20,8 @@ project(sfml-populate NONE)
 include(ExternalProject)
 ExternalProject_Add(sfml-populate
                      "UPDATE_DISCONNECTED" "False" "DOWNLOAD_EXTRACT_TIMESTAMP" "TRUE" "EXTERNALPROJECT_INTERNAL_ARGUMENT_SEPARATOR" "URL" "https://github.com/SFML/SFML/archive/refs/tags/2.6.1.zip"
-                    SOURCE_DIR          "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src"
-                    BINARY_DIR          "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build"
+                    SOURCE_DIR          "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src"
+                    BINARY_DIR          "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build"
                     CONFIGURE_COMMAND   ""
                     BUILD_COMMAND       ""
                     INSTALL_COMMAND     ""

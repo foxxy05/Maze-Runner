@@ -1,10 +1,10 @@
 _deps/sfml-build/src/SFML/System/CMakeFiles/sfml-system.dir/FileInputStream.cpp.obj: \
- G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\_deps\sfml-src\src\SFML\System\FileInputStream.cpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/FileInputStream.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/Config.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/Export.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/InputStream.hpp \
- G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include/SFML/System/NonCopyable.hpp \
+ G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\_deps\sfml-src\src\SFML\System\FileInputStream.cpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/FileInputStream.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/Config.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/Export.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/InputStream.hpp \
+ G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include/SFML/System/NonCopyable.hpp \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\cstdio \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\mingw32\bits\c++config.h \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\mingw32\bits\os_defines.h \

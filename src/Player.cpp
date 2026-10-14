@@ -1,108 +1,130 @@
 #include "Player.h"
 #include <cmath>
+#include <cstdlib>
 #include <algorithm>
 
 Player::Player(int startR, int startC, int cellW, int cellH)
-    : gridR_(startR), gridC_(startC), targetR_(startR), targetC_(startC),
-      cellW_(cellW), cellH_(cellH), facingDr_(0), facingDc_(1), steps_(0) {
-    posX_ = startC * cellW_;
-    posY_ = startR * cellH_;
+    : mover_(startR, startC, cfg::PLAYER_CELLS_PER_SEC, cellW, cellH),
+      discovered_(),
+      visibleNow_() {
+    mover_.setAnimSettings(cfg::ANIM_FRAME_TIME, cfg::TOTAL_ANIM_FRAMES);
+    mover_.setSnapThreshold(cfg::SNAP_THRESHOLD);
 }
 
 void Player::resetDiscovery(int rows, int cols) {
     discovered_.assign(rows, std::vector<bool>(cols, false));
+    visibleNow_.assign(rows, std::vector<bool>(cols, false));
 }
 
 void Player::update(float dt, int inputDr, int inputDc, const Maze& maze) {
-    float targetX = targetC_ * cellW_;
-    float targetY = targetR_ * cellH_;
-
-    float dx = targetX - posX_;
-    float dy = targetY - posY_;
-    float dist = std::sqrt(dx * dx + dy * dy);
-
-    if (dist < SNAP_THRESHOLD) {
-        posX_ = targetX;
-        posY_ = targetY;
-        gridR_ = targetR_;
-        gridC_ = targetC_;
-
-        if (inputDr != 0 || inputDc != 0) {
-            facingDr_ = inputDr;
-            facingDc_ = inputDc;
-
-            int nextR = gridR_ + inputDr;
-            int nextC = gridC_ + inputDc;
-
-            if (!maze.isWall(nextR, nextC)) {
-                targetR_ = nextR;
-                targetC_ = nextC;
-                isMoving_ = true;
-                steps_++;
-            } else {
-                isMoving_ = false;
-            }
-        } else {
-            isMoving_ = false;
-        }
-    } else {
-        isMoving_ = true;
-        float moveDist = speed_ * dt;
-        if (moveDist >= dist) {
-            posX_ = targetX;
-            posY_ = targetY;
-            gridR_ = targetR_;
-            gridC_ = targetC_;
-        } else {
-            posX_ += (dx / dist) * moveDist;
-            posY_ += (dy / dist) * moveDist;
-        }
-    }
-
-    if (isMoving_) {
-        animTimer_ += dt;
-        if (animTimer_ >= ANIM_FRAME_TIME) {
-            animTimer_ = 0.0f;
-            animFrame_ = (animFrame_ + 1) % TOTAL_ANIM_FRAMES;
-        }
-    } else {
-        animFrame_ = 0;
-        animTimer_ = 0.0f;
-    }
+    mover_.updateWithInput(dt, inputDr, inputDc, maze);
 }
 
 void Player::discoverAround(const Maze& maze, int radius, int forwardExtra) {
+    int rows = maze.rows();
+    int cols = maze.cols();
+
+    if (visibleNow_.empty() || visibleNow_.size() != static_cast<size_t>(rows) || visibleNow_[0].size() != static_cast<size_t>(cols)) {
+        visibleNow_.assign(rows, std::vector<bool>(cols, false));
+    } else {
+        for (auto& row : visibleNow_) {
+            std::fill(row.begin(), row.end(), false);
+        }
+    }
+
+    if (discovered_.empty() || discovered_.size() != static_cast<size_t>(rows) || discovered_[0].size() != static_cast<size_t>(cols)) {
+        discovered_.assign(rows, std::vector<bool>(cols, false));
+    }
+
+    int gridR = mover_.gridRow();
+    int gridC = mover_.gridCol();
+
+    if (maze.inBounds(gridR, gridC)) {
+        visibleNow_[gridR][gridC] = true;
+        discovered_[gridR][gridC] = true;
+    }
+
+    auto castRay = [&](int targetR, int targetC) {
+        int r0 = gridR;
+        int c0 = gridC;
+        int r1 = targetR;
+        int c1 = targetC;
+
+        int dr = r1 - r0;
+        int dc = c1 - c0;
+        int maxDist = std::max(std::abs(dr), std::abs(dc));
+        if (maxDist == 0) return;
+
+        int numSamples = maxDist * 3;
+        int prevR = r0;
+        int prevC = c0;
+
+        for (int step = 1; step <= numSamples; step++) {
+            float t = static_cast<float>(step) / static_cast<float>(numSamples);
+            int curR = static_cast<int>(std::floor(static_cast<float>(r0) + 0.5f + static_cast<float>(dr) * t));
+            int curC = static_cast<int>(std::floor(static_cast<float>(c0) + 0.5f + static_cast<float>(dc) * t));
+
+            if (!maze.inBounds(curR, curC)) break;
+            if (curR == prevR && curC == prevC) continue;
+
+            if (curR != prevR && curC != prevC) {
+                if (maze.isWall(prevR, curC) && maze.isWall(curR, prevC)) {
+                    break;
+                }
+            }
+
+            visibleNow_[curR][curC] = true;
+            discovered_[curR][curC] = true;
+
+            if (maze.isWall(curR, curC)) {
+                break;
+            }
+
+            prevR = curR;
+            prevC = curC;
+        }
+    };
+
+    // 1. Raycast to each cell within the base radius
     for (int dr = -radius; dr <= radius; dr++) {
         for (int dc = -radius; dc <= radius; dc++) {
-            int r = gridR_ + dr, c = gridC_ + dc;
-            if (maze.inBounds(r, c) && (std::abs(dr) + std::abs(dc) <= radius + 1)) {
-                discovered_[r][c] = true;
+            if (dr * dr + dc * dc <= (radius + 1) * (radius + 1)) {
+                int tr = gridR + dr;
+                int tc = gridC + dc;
+                if (maze.inBounds(tr, tc)) {
+                    castRay(tr, tc);
+                }
             }
         }
     }
 
-    if (facingDr_ != 0 || facingDc_ != 0) {
+    // 2. Raycast in forward light cone (if forwardExtra > 0)
+    int facingDr = mover_.facingDr();
+    int facingDc = mover_.facingDc();
+    if (forwardExtra > 0 && (facingDr != 0 || facingDc != 0)) {
         int maxDist = radius + forwardExtra;
+        int latDr = facingDc;
+        int latDc = facingDr;
+
         for (int dist = 1; dist <= maxDist; dist++) {
-            int fr = gridR_ + facingDr_ * dist;
-            int fc = gridC_ + facingDc_ * dist;
+            int fr = gridR + facingDr * dist;
+            int fc = gridC + facingDc * dist;
 
-            if (!maze.inBounds(fr, fc)) break;
-
-            discovered_[fr][fc] = true;
-
-            int sr1 = fr + facingDc_, sc1 = fc + facingDr_;
-            int sr2 = fr - facingDc_, sc2 = fc - facingDr_;
-            if (maze.inBounds(sr1, sc1)) discovered_[sr1][sc1] = true;
-            if (maze.inBounds(sr2, sc2)) discovered_[sr2][sc2] = true;
-
-            if (maze.isWall(fr, fc)) break;
+            if (maze.inBounds(fr, fc)) castRay(fr, fc);
+            if (maze.inBounds(fr + latDr, fc + latDc)) castRay(fr + latDr, fc + latDc);
+            if (maze.inBounds(fr - latDr, fc - latDc)) castRay(fr - latDr, fc - latDc);
         }
     }
 }
 
 bool Player::isDiscovered(int r, int c) const {
-    if (r < 0 || r >= (int)discovered_.size() || c < 0 || c >= (int)discovered_[0].size())
+    if (r < 0 || r >= static_cast<int>(discovered_.size()) || c < 0 || c >= static_cast<int>(discovered_[0].size()))
         return false;
     return discovered_[r][c];
+}
+
+bool Player::canSeeNow(int r, int c) const {
+    if (r < 0 || r >= static_cast<int>(visibleNow_.size()) || c < 0 || c >= static_cast<int>(visibleNow_[0].size()))
+        return false;
+    return visibleNow_[r][c];
 }

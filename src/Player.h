@@ -1,53 +1,40 @@
 #pragma once
 #include "Maze.h"
+#include "Config.h"
+#include "GridMover.h"
 #include <vector>
-
-#define DEFAULT_CELL_W 20
-#define DEFAULT_CELL_H 16
-#define DEFAULT_PLAYER_SPEED 150.0f
-#define DEFAULT_VISION_RADIUS 3
-#define DEFAULT_FORWARD_EXTRA 4
-#define ANIM_FRAME_TIME 0.10f
-#define TOTAL_ANIM_FRAMES 4
-#define SNAP_THRESHOLD 1.0f
 
 class Player {
 public:
-    Player(int startR, int startC, int cellW = DEFAULT_CELL_W, int cellH = DEFAULT_CELL_H);
+    Player(int startR, int startC, int cellW = cfg::TILE_SIZE, int cellH = cfg::TILE_SIZE);
 
     void update(float dt, int inputDr, int inputDc, const Maze& maze);
 
-    void discoverAround(const Maze& maze, int radius = DEFAULT_VISION_RADIUS, int forwardExtra = DEFAULT_FORWARD_EXTRA);
+    void discoverAround(const Maze& maze, int radius = cfg::FOG_VISION_RADIUS, int forwardExtra = cfg::FOG_LIGHT_CONE_EXTRA);
     void resetDiscovery(int rows, int cols);
     bool isDiscovered(int r, int c) const;
+    bool canSeeNow(int r, int c) const;
 
-    int gridRow() const { return gridR_; }
-    int gridCol() const { return gridC_; }
-    float posX() const { return posX_; }
-    float posY() const { return posY_; }
-    int facingDr() const { return facingDr_; }
-    int facingDc() const { return facingDc_; }
-    int steps() const { return steps_; }
+    int gridRow() const { return mover_.gridRow(); }
+    int gridCol() const { return mover_.gridCol(); }
+    float posX() const { return mover_.posX(); }
+    float posY() const { return mover_.posY(); }
+    int facingDr() const { return mover_.facingDr(); }
+    int facingDc() const { return mover_.facingDc(); }
+    int steps() const { return mover_.steps(); }
 
-    bool isMoving() const { return isMoving_; }
-    int animFrame() const { return animFrame_; }
+    bool isMoving() const { return mover_.isMoving(); }
+    int animFrame() const { return mover_.animFrame(); }
 
-    void setCellSize(int cellW, int cellH) { cellW_ = cellW; cellH_ = cellH; }
-    void setSpeed(float speed) { speed_ = speed; }
+    void setCellSize(int cellW, int cellH) { mover_.setCellSize(cellW, cellH); }
+    void setCellsPerSec(float cps) { mover_.setCellsPerSec(cps); }
+    void setSpeedMultiplier(float mult) { mover_.setSpeedMultiplier(mult); }
+
+    GridMover& mover() { return mover_; }
+    const GridMover& mover() const { return mover_; }
 
 private:
-    int gridR_, gridC_;
-    int targetR_, targetC_;
-    float posX_, posY_;
-    int facingDr_ = 0, facingDc_ = 1;
-    int steps_ = 0;
-
-    bool isMoving_ = false;
-    float animTimer_ = 0.0f;
-    int animFrame_ = 0;
-
-    int cellW_ = DEFAULT_CELL_W, cellH_ = DEFAULT_CELL_H;
-    float speed_ = DEFAULT_PLAYER_SPEED;
-
+    GridMover mover_;
     std::vector<std::vector<bool>> discovered_;
+    std::vector<std::vector<bool>> visibleNow_;
 };

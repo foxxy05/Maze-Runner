@@ -11,7 +11,7 @@ CXX_FLAGS = -std=gnu++1z
 
 RC_DEFINES = -DSFML_SYSTEM_EXPORTS
 
-RC_INCLUDES = -I G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\_deps\sfml-src\include -I G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\_deps\sfml-src\src
+RC_INCLUDES = -I G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\_deps\sfml-src\include -I G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\_deps\sfml-src\src
 
 RC_FLAGS = 
 

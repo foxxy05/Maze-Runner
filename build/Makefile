@@ -56,10 +56,10 @@ RM = "C:\Program Files\CMake\bin\cmake.exe" -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project
+CMAKE_SOURCE_DIR = G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build
+CMAKE_BINARY_DIR = G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -151,9 +151,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\CMakeFiles G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\\CMakeFiles\progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\\CMakeFiles\progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\project\build\CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -245,6 +245,78 @@ sfml-graphics/fast:
 	$(MAKE) $(MAKESILENT) -f _deps\sfml-build\src\SFML\Graphics\CMakeFiles\sfml-graphics.dir\build.make _deps/sfml-build/src/SFML/Graphics/CMakeFiles/sfml-graphics.dir/build
 .PHONY : sfml-graphics/fast
 
+src/DirectionInput.obj: src/DirectionInput.cpp.obj
+.PHONY : src/DirectionInput.obj
+
+# target to build an object file
+src/DirectionInput.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/DirectionInput.cpp.obj
+.PHONY : src/DirectionInput.cpp.obj
+
+src/DirectionInput.i: src/DirectionInput.cpp.i
+.PHONY : src/DirectionInput.i
+
+# target to preprocess a source file
+src/DirectionInput.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/DirectionInput.cpp.i
+.PHONY : src/DirectionInput.cpp.i
+
+src/DirectionInput.s: src/DirectionInput.cpp.s
+.PHONY : src/DirectionInput.s
+
+# target to generate assembly for a file
+src/DirectionInput.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/DirectionInput.cpp.s
+.PHONY : src/DirectionInput.cpp.s
+
+src/Game.obj: src/Game.cpp.obj
+.PHONY : src/Game.obj
+
+# target to build an object file
+src/Game.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Game.cpp.obj
+.PHONY : src/Game.cpp.obj
+
+src/Game.i: src/Game.cpp.i
+.PHONY : src/Game.i
+
+# target to preprocess a source file
+src/Game.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Game.cpp.i
+.PHONY : src/Game.cpp.i
+
+src/Game.s: src/Game.cpp.s
+.PHONY : src/Game.s
+
+# target to generate assembly for a file
+src/Game.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Game.cpp.s
+.PHONY : src/Game.cpp.s
+
+src/GridMover.obj: src/GridMover.cpp.obj
+.PHONY : src/GridMover.obj
+
+# target to build an object file
+src/GridMover.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj
+.PHONY : src/GridMover.cpp.obj
+
+src/GridMover.i: src/GridMover.cpp.i
+.PHONY : src/GridMover.i
+
+# target to preprocess a source file
+src/GridMover.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/GridMover.cpp.i
+.PHONY : src/GridMover.cpp.i
+
+src/GridMover.s: src/GridMover.cpp.s
+.PHONY : src/GridMover.s
+
+# target to generate assembly for a file
+src/GridMover.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/GridMover.cpp.s
+.PHONY : src/GridMover.cpp.s
+
 src/Hunter.obj: src/Hunter.cpp.obj
 .PHONY : src/Hunter.obj
 
@@ -293,6 +365,30 @@ src/Maze.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Maze.cpp.s
 .PHONY : src/Maze.cpp.s
 
+src/Pathfinder.obj: src/Pathfinder.cpp.obj
+.PHONY : src/Pathfinder.obj
+
+# target to build an object file
+src/Pathfinder.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Pathfinder.cpp.obj
+.PHONY : src/Pathfinder.cpp.obj
+
+src/Pathfinder.i: src/Pathfinder.cpp.i
+.PHONY : src/Pathfinder.i
+
+# target to preprocess a source file
+src/Pathfinder.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Pathfinder.cpp.i
+.PHONY : src/Pathfinder.cpp.i
+
+src/Pathfinder.s: src/Pathfinder.cpp.s
+.PHONY : src/Pathfinder.s
+
+# target to generate assembly for a file
+src/Pathfinder.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Pathfinder.cpp.s
+.PHONY : src/Pathfinder.cpp.s
+
 src/Player.obj: src/Player.cpp.obj
 .PHONY : src/Player.obj
 
@@ -316,6 +412,30 @@ src/Player.s: src/Player.cpp.s
 src/Player.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Player.cpp.s
 .PHONY : src/Player.cpp.s
+
+src/UI.obj: src/UI.cpp.obj
+.PHONY : src/UI.obj
+
+# target to build an object file
+src/UI.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/UI.cpp.obj
+.PHONY : src/UI.cpp.obj
+
+src/UI.i: src/UI.cpp.i
+.PHONY : src/UI.i
+
+# target to preprocess a source file
+src/UI.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/UI.cpp.i
+.PHONY : src/UI.cpp.i
+
+src/UI.s: src/UI.cpp.s
+.PHONY : src/UI.s
+
+# target to generate assembly for a file
+src/UI.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/UI.cpp.s
+.PHONY : src/UI.cpp.s
 
 src/main.obj: src/main.cpp.obj
 .PHONY : src/main.obj
@@ -360,15 +480,30 @@ help:
 	@echo ... sfml-main
 	@echo ... sfml-system
 	@echo ... sfml-window
+	@echo ... src/DirectionInput.obj
+	@echo ... src/DirectionInput.i
+	@echo ... src/DirectionInput.s
+	@echo ... src/Game.obj
+	@echo ... src/Game.i
+	@echo ... src/Game.s
+	@echo ... src/GridMover.obj
+	@echo ... src/GridMover.i
+	@echo ... src/GridMover.s
 	@echo ... src/Hunter.obj
 	@echo ... src/Hunter.i
 	@echo ... src/Hunter.s
 	@echo ... src/Maze.obj
 	@echo ... src/Maze.i
 	@echo ... src/Maze.s
+	@echo ... src/Pathfinder.obj
+	@echo ... src/Pathfinder.i
+	@echo ... src/Pathfinder.s
 	@echo ... src/Player.obj
 	@echo ... src/Player.i
 	@echo ... src/Player.s
+	@echo ... src/UI.obj
+	@echo ... src/UI.i
+	@echo ... src/UI.s
 	@echo ... src/main.obj
 	@echo ... src/main.i
 	@echo ... src/main.s

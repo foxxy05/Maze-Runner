@@ -57,7 +57,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "C:/Program Files/CMake/share/cmake-4.4/Modules/Platform/WindowsPaths.cmake"
   "C:/Program Files/CMake/share/cmake-4.4/Modules/WriteBasicConfigVersionFile.cmake"
   "C:/Program Files/CMake/share/cmake-4.4/Templates/CPackConfig.cmake.in"
-  "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/CMakeLists.txt"
+  "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/CMakeLists.txt"
   "CMakeFiles/4.4.2/CMakeCCompiler.cmake"
   "CMakeFiles/4.4.2/CMakeCXXCompiler.cmake"
   "CMakeFiles/4.4.2/CMakeRCCompiler.cmake"

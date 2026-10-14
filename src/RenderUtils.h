@@ -1,21 +1,12 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <cmath>
-
-#define MAX_COUNTDOWN_DIGIT 5
-#define MIN_COUNTDOWN_DIGIT 1
-
-#define PLAYER_GLOW_RADIUS 11.0f
-#define HUNTER_THREAT_RADIUS 13.0f
-
-#define DIGIT_WIDTH 24.0f
-#define DIGIT_HEIGHT 38.0f
-#define DIGIT_THICKNESS 5.0f
+#include "Config.h"
 
 // Helper to draw Sci-Fi Player Character with 4-frame stride running animation
 inline void drawAnimatedPlayer(sf::RenderWindow& window, sf::Vector2f center, int dr, int dc, int frame, bool isMoving, float pulse) {
-    sf::CircleShape glow(PLAYER_GLOW_RADIUS);
-    glow.setOrigin(PLAYER_GLOW_RADIUS, PLAYER_GLOW_RADIUS);
+    sf::CircleShape glow(cfg::PLAYER_GLOW_RADIUS);
+    glow.setOrigin(cfg::PLAYER_GLOW_RADIUS, cfg::PLAYER_GLOW_RADIUS);
     glow.setPosition(center);
     glow.setFillColor(sf::Color(0, 240, 255, static_cast<sf::Uint8>(40 + pulse * 30)));
     window.draw(glow);
@@ -92,8 +83,8 @@ inline void drawAnimatedPlayer(sf::RenderWindow& window, sf::Vector2f center, in
 
 // Helper to draw Cyber-Spectre Hunter Character with 4-frame stride animation
 inline void drawAnimatedHunter(sf::RenderWindow& window, sf::Vector2f center, int frame, bool isMoving, float pulse, bool isDormant) {
-    sf::CircleShape threat(HUNTER_THREAT_RADIUS);
-    threat.setOrigin(HUNTER_THREAT_RADIUS, HUNTER_THREAT_RADIUS);
+    sf::CircleShape threat(cfg::HUNTER_THREAT_RADIUS);
+    threat.setOrigin(cfg::HUNTER_THREAT_RADIUS, cfg::HUNTER_THREAT_RADIUS);
     threat.setPosition(center);
     sf::Color threatColor = isDormant ? sf::Color(120, 25, 35, 90)
                                       : sf::Color(255, 20, 50, static_cast<sf::Uint8>(75 + pulse * 75));
@@ -154,7 +145,7 @@ inline void drawAnimatedHunter(sf::RenderWindow& window, sf::Vector2f center, in
 
 // Vector 7-Segment Digital Number Renderer
 inline void drawDigitalNumber(sf::RenderWindow& window, sf::Vector2f pos, int number, sf::Color color) {
-    float w = DIGIT_WIDTH, h = DIGIT_HEIGHT, t = DIGIT_THICKNESS;
+    float w = cfg::DIGIT_WIDTH, h = cfg::DIGIT_HEIGHT, t = cfg::DIGIT_THICKNESS;
 
     auto drawSeg = [&](float x, float y, float sw, float sh) {
         sf::RectangleShape seg(sf::Vector2f(sw, sh));
@@ -195,8 +186,8 @@ inline void drawBigCountdownOverlay(sf::RenderWindow& window, int mazeCols, int 
     window.draw(backdrop);
 
     int digitNum = static_cast<int>(std::ceil(previewTimeLeft));
-    if (digitNum > MAX_COUNTDOWN_DIGIT) digitNum = MAX_COUNTDOWN_DIGIT;
-    if (digitNum < MIN_COUNTDOWN_DIGIT) digitNum = MIN_COUNTDOWN_DIGIT;
+    if (digitNum > cfg::MAX_COUNTDOWN_DIGIT) digitNum = cfg::MAX_COUNTDOWN_DIGIT;
+    if (digitNum < cfg::MIN_COUNTDOWN_DIGIT) digitNum = cfg::MIN_COUNTDOWN_DIGIT;
 
     sf::CircleShape ring(36.0f);
     ring.setOrigin(36.0f, 36.0f);

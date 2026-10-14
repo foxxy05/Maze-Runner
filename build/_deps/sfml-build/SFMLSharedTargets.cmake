@@ -50,21 +50,21 @@ unset(_cmake_expected_targets)
 add_library(sfml-system SHARED IMPORTED)
 
 set_target_properties(sfml-system PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include"
+  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include"
 )
 
 # Create imported target sfml-main
 add_library(sfml-main STATIC IMPORTED)
 
 set_target_properties(sfml-main PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include"
+  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include"
 )
 
 # Create imported target sfml-window
 add_library(sfml-window SHARED IMPORTED)
 
 set_target_properties(sfml-window PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include"
+  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include"
   INTERFACE_LINK_LIBRARIES "sfml-system"
 )
 
@@ -79,7 +79,7 @@ set_target_properties(OpenGL PROPERTIES
 add_library(sfml-graphics SHARED IMPORTED)
 
 set_target_properties(sfml-graphics PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/include"
+  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/include"
   INTERFACE_LINK_LIBRARIES "sfml-window"
 )
 
@@ -87,36 +87,36 @@ set_target_properties(sfml-graphics PROPERTIES
 add_library(Freetype INTERFACE IMPORTED)
 
 set_target_properties(Freetype PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/extlibs/headers/freetype2"
-  INTERFACE_LINK_LIBRARIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src/extlibs/libs-mingw/x86/libfreetype.a"
+  INTERFACE_INCLUDE_DIRECTORIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/extlibs/headers/freetype2"
+  INTERFACE_LINK_LIBRARIES "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src/extlibs/libs-mingw/x86/libfreetype.a"
 )
 
 # Import target "sfml-system" for configuration ""
 set_property(TARGET sfml-system APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
 set_target_properties(sfml-system PROPERTIES
-  IMPORTED_IMPLIB_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/lib/libsfml-system.a"
-  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/lib/sfml-system-2.dll"
+  IMPORTED_IMPLIB_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/libsfml-system.a"
+  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/sfml-system-2.dll"
   )
 
 # Import target "sfml-main" for configuration ""
 set_property(TARGET sfml-main APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
 set_target_properties(sfml-main PROPERTIES
   IMPORTED_LINK_INTERFACE_LANGUAGES_NOCONFIG "CXX"
-  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/lib/libsfml-main.a"
+  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/libsfml-main.a"
   )
 
 # Import target "sfml-window" for configuration ""
 set_property(TARGET sfml-window APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
 set_target_properties(sfml-window PROPERTIES
-  IMPORTED_IMPLIB_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/lib/libsfml-window.a"
-  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/lib/sfml-window-2.dll"
+  IMPORTED_IMPLIB_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/libsfml-window.a"
+  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/sfml-window-2.dll"
   )
 
 # Import target "sfml-graphics" for configuration ""
 set_property(TARGET sfml-graphics APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
 set_target_properties(sfml-graphics PROPERTIES
-  IMPORTED_IMPLIB_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/lib/libsfml-graphics.a"
-  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/lib/sfml-graphics-2.dll"
+  IMPORTED_IMPLIB_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/libsfml-graphics.a"
+  IMPORTED_LOCATION_NOCONFIG "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/sfml-graphics-2.dll"
   )
 
 # This file does not depend on other imported targets which have

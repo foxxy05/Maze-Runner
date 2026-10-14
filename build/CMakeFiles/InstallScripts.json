@@ -1,13 +1,13 @@
 {
 	"InstallScripts" : 
 	[
-		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/cmake_install.cmake",
-		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/cmake_install.cmake",
-		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/src/SFML/cmake_install.cmake",
-		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/src/SFML/System/cmake_install.cmake",
-		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/src/SFML/Main/cmake_install.cmake",
-		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/src/SFML/Window/cmake_install.cmake",
-		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-build/src/SFML/Graphics/cmake_install.cmake"
+		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/cmake_install.cmake",
+		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/cmake_install.cmake",
+		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/src/SFML/cmake_install.cmake",
+		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/src/SFML/System/cmake_install.cmake",
+		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/src/SFML/Main/cmake_install.cmake",
+		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/src/SFML/Window/cmake_install.cmake",
+		"G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/src/SFML/Graphics/cmake_install.cmake"
 	],
 	"Parallel" : false
 }

@@ -22,9 +22,15 @@ add_executable(MazeChase
     src/Maze.cpp
     src/Player.cpp
     src/Hunter.cpp
+    src/DirectionInput.cpp
+    src/Pathfinder.cpp
+    src/Game.cpp
+    src/UI.cpp
+    src/GridMover.cpp
 )
 
 target_include_directories(MazeChase PRIVATE src)
+target_compile_options(MazeChase PRIVATE -Wall -Wextra)
 
 target_link_libraries(MazeChase PRIVATE
     sfml-graphics
@@ -38,5 +44,8 @@ if(WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:sfml-graphics> $<TARGET_FILE:sfml-window> $<TARGET_FILE:sfml-system>
             $<TARGET_FILE_DIR:MazeChase>
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:MazeChase>/assets
     )
 endif()

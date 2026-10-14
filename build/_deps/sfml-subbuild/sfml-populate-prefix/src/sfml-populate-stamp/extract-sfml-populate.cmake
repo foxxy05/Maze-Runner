@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION ${CMAKE_VERSION}) # this file comes with cmake
 
 # Make file names absolute:
 #
-get_filename_component(filename "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-subbuild/sfml-populate-prefix/src/2.6.1.zip" ABSOLUTE)
-get_filename_component(directory "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/project/build/_deps/sfml-src" ABSOLUTE)
+get_filename_component(filename "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-subbuild/sfml-populate-prefix/src/2.6.1.zip" ABSOLUTE)
+get_filename_component(directory "G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-src" ABSOLUTE)
 
 message(VERBOSE "extracting...
      src='${filename}'

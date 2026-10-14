@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = @CMakeFiles\MazeChase.dir\includes_CXX.rsp
 
-CXX_FLAGS = -std=gnu++1z
+CXX_FLAGS = -std=gnu++1z -Wall -Wextra
 

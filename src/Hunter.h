@@ -1,38 +1,53 @@
 #pragma once
 #include "Maze.h"
-
-#define DEFAULT_HUNTER_SPEED 125.0f
-#define HUNTER_ANIM_FRAME_TIME 0.10f
-#define HUNTER_TOTAL_FRAMES 4
-#define HUNTER_SNAP_THRESHOLD 1.0f
+#include "Config.h"
+#include "GridMover.h"
+#include <vector>
 
 class Hunter {
 public:
-    Hunter(int startR, int startC, int cellW = 20, int cellH = 16);
+    Hunter(int startR, int startC, int cellW = cfg::TILE_SIZE, int cellH = cfg::TILE_SIZE,
+           float cellsPerSec = cfg::HUNTER_CELLS_PER_SEC);
 
     void step(const Maze& maze, int playerR, int playerC);
-    void update(float dt);
+    void update(float dt, const Maze& maze, int playerR, int playerC, bool isAwake);
+    void updateHuman(float dt, int inputDr, int inputDc, const Maze& maze, bool isReleased);
 
-    int gridRow() const { return gridR_; }
-    int gridCol() const { return gridC_; }
-    float posX() const { return posX_; }
-    float posY() const { return posY_; }
+    // Fog and Line-of-Sight for 2-Player
+    void discoverAround(const Maze& maze, int radius = cfg::TWO_P_HUNTER_LOS_RADIUS);
+    void resetDiscovery(int rows, int cols);
+    bool isDiscovered(int r, int c) const;
+    bool canSeeNow(int r, int c) const;
 
-    bool isMoving() const { return isMoving_; }
-    int animFrame() const { return animFrame_; }
+    int gridRow() const { return mover_.gridRow(); }
+    int gridCol() const { return mover_.gridCol(); }
+    float posX() const { return mover_.posX(); }
+    float posY() const { return mover_.posY(); }
+    bool isMoving() const { return mover_.isMoving(); }
+    int animFrame() const { return mover_.animFrame(); }
+    int facingDr() const { return mover_.facingDr(); }
+    int facingDc() const { return mover_.facingDc(); }
 
-    void setCellSize(int cellW, int cellH) { cellW_ = cellW; cellH_ = cellH; }
-    void setSpeed(float speed) { speed_ = speed; }
+    void setCellSize(int cellW, int cellH) { mover_.setCellSize(cellW, cellH); }
+    void setCellsPerSec(float cps) { mover_.setCellsPerSec(cps); }
+    void setSpeedMultiplier(float mult) { mover_.setSpeedMultiplier(mult); }
+
+    GridMover& mover() { return mover_; }
+    const GridMover& mover() const { return mover_; }
+
+    int getAndResetCellsMoved() {
+        int moved = cellsMovedLastSecond_;
+        cellsMovedLastSecond_ = 0;
+        return moved;
+    }
 
 private:
-    int gridR_, gridC_;
-    int targetR_, targetC_;
-    float posX_, posY_;
+    GridMover mover_;
+    int cellsMovedTotal_ = 0;
+    int cellsMovedLastSecond_ = 0;
+    int lastLoggedGridR_ = 0;
+    int lastLoggedGridC_ = 0;
 
-    bool isMoving_ = false;
-    float animTimer_ = 0.0f;
-    int animFrame_ = 0;
-
-    int cellW_ = 20, cellH_ = 16;
-    float speed_ = DEFAULT_HUNTER_SPEED;
+    std::vector<std::vector<bool>> discovered_;
+    std::vector<std::vector<bool>> visibleNow_;
 };
