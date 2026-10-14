@@ -85,7 +85,48 @@ Game::Game(unsigned int seed)
     twoPlayerMatchOverMenu_.addItem("Main Menu", true, 2);
 
     loadFonts();
+    buildRadialGradient();
     resetRound(initialSeed_);
+}
+
+void Game::buildRadialGradient() {
+    const unsigned int size = 128;
+    sf::Image image; image.create(size, size, sf::Color::Transparent);
+    for (unsigned int y = 0; y < size; ++y) for (unsigned int x = 0; x < size; ++x) {
+        float dx = (static_cast<float>(x) / (size - 1)) * 2.0f - 1.0f;
+        float dy = (static_cast<float>(y) / (size - 1)) * 2.0f - 1.0f;
+        float edge = std::min(1.0f, std::sqrt(dx * dx + dy * dy));
+        sf::Uint8 alpha = static_cast<sf::Uint8>(edge * edge * 190.0f);
+        image.setPixel(x, y, sf::Color(255, 255, 255, alpha));
+    }
+    radialGradientTexture_.loadFromImage(image);
+    radialGradientSprite_.setTexture(radialGradientTexture_);
+}
+
+void Game::rebuildMazeTexture() {
+    const unsigned int width = cfg::MAZE_COLS * cfg::TILE_SIZE;
+    const unsigned int height = cfg::MAZE_ROWS * cfg::TILE_SIZE;
+    if (!mazeTexture_.create(width, height)) return;
+    mazeTexture_.clear(Theme::Background);
+    for (int r = 0; r < cfg::MAZE_ROWS; ++r) for (int c = 0; c < cfg::MAZE_COLS; ++c) {
+        sf::Vector2f pos(c * cfg::TILE_SIZE, r * cfg::TILE_SIZE);
+        sf::RectangleShape tile({static_cast<float>(cfg::TILE_SIZE), static_cast<float>(cfg::TILE_SIZE)});
+        tile.setPosition(pos);
+        if (maze_.isWall(r,c)) {
+            tile.setFillColor(Theme::WallBase); mazeTexture_.draw(tile);
+            const int dr[4] = {-1, 1, 0, 0}, dc[4] = {0, 0, -1, 1};
+            for (int side = 0; side < 4; ++side) if (!maze_.isWall(r + dr[side], c + dc[side])) {
+                sf::RectangleShape edge({side < 2 ? static_cast<float>(cfg::TILE_SIZE) : 2.0f, side < 2 ? 2.0f : static_cast<float>(cfg::TILE_SIZE)});
+                edge.setPosition(pos.x + (side == 3 ? cfg::TILE_SIZE - 2.0f : 0.0f), pos.y + (side == 1 ? cfg::TILE_SIZE - 2.0f : 0.0f));
+                edge.setFillColor(sf::Color(0, 220, 255, 125)); mazeTexture_.draw(edge);
+            }
+        } else {
+            tile.setFillColor(Theme::PathBase); mazeTexture_.draw(tile);
+            sf::Vertex grid[] = {sf::Vertex(pos, sf::Color(35, 60, 85, 35)), sf::Vertex({pos.x + cfg::TILE_SIZE, pos.y}, sf::Color(35,60,85,35))};
+            mazeTexture_.draw(grid, 2, sf::Lines);
+        }
+    }
+    mazeTexture_.display(); mazeSprite_.setTexture(mazeTexture_.getTexture()); mazeTextureReady_ = true;
 }
 
 bool Game::tryLoadFont(sf::Font& font, const std::string& assetPath, const std::vector<std::string>& fallbacks) {
@@ -126,6 +167,7 @@ void Game::resetRound(unsigned int seed) {
 void Game::finishGeneratedRound() {
     std::cout << "Maze Seed: " << maze_.seed() << std::endl;
 
+    rebuildMazeTexture();
     if (generationForTwoPlayer_) {
         std::pair<int, int> spawn = Pathfinder::findSpawnCell(
             maze_, {maze_.startRow(), maze_.startCol()}, cfg::HUNTER_SPAWN_DIST);
@@ -136,6 +178,7 @@ void Game::finishGeneratedRound() {
         tpHunter_ = Hunter(spawn.first, spawn.second, cfg::TILE_SIZE, cfg::TILE_SIZE, cfg::TWO_P_HUNTER_CELLS_PER_SEC);
         tpHunter_.resetDiscovery(cfg::MAZE_ROWS, cfg::MAZE_COLS);
         tpHunter_.discoverAround(maze_, cfg::TWO_P_HUNTER_LOS_RADIUS);
+        spawnPowerUps(true);
         p1CameraPos_ = (twoPlayerRound_ == 1)
             ? sf::Vector2f(tpRunner_.posX() + cfg::TILE_SIZE / 2.0f, tpRunner_.posY() + cfg::TILE_SIZE / 2.0f)
             : sf::Vector2f(tpHunter_.posX() + cfg::TILE_SIZE / 2.0f, tpHunter_.posY() + cfg::TILE_SIZE / 2.0f);
@@ -156,9 +199,12 @@ void Game::finishGeneratedRound() {
 
     player_ = Player(maze_.startRow(), maze_.startCol(), cfg::TILE_SIZE, cfg::TILE_SIZE);
     player_.resetDiscovery(cfg::MAZE_ROWS, cfg::MAZE_COLS);
-    player_.discoverAround(maze_, cfg::FOG_VISION_RADIUS, cfg::FOG_LIGHT_CONE_EXTRA);
+    int levelFog = std::max(2, cfg::FOG_VISION_RADIUS - (level_ >= 4) - (level_ >= 7));
+    player_.discoverAround(maze_, levelFog, cfg::FOG_LIGHT_CONE_EXTRA);
 
     hunter_ = Hunter(hunterSpawn.first, hunterSpawn.second, cfg::TILE_SIZE, cfg::TILE_SIZE, cfg::HUNTER_CELLS_PER_SEC);
+    hunter_.setCellsPerSec(std::min(cfg::PLAYER_CELLS_PER_SEC * 1.05f, cfg::HUNTER_CELLS_PER_SEC * (1.0f + 0.05f * (level_ - 1))));
+    spawnPowerUps(false);
 
     cameraPos_.x = player_.posX() + cfg::TILE_SIZE / 2.0f;
     cameraPos_.y = player_.posY() + cfg::TILE_SIZE / 2.0f;
@@ -222,6 +268,8 @@ void Game::processEvents() {
             showControlsTest_ = !showControlsTest_;
             continue;
         }
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F2) { lowFx_ = !lowFx_; toastTime_ = 2.0f; continue; }
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F4) { showFps_ = !showFps_; continue; }
 
         if (showControlsTest_) {
             if (event.type == sf::Event::KeyPressed) {
@@ -247,6 +295,7 @@ void Game::processEvents() {
             } else {
                 int action = mainMenu_.handleEvent(event);
                 if (action == 1) { // Single Player
+                    level_ = 1; runScore_ = 0;
                     resetRound(0);
                     state_ = GameState::Generating;
                 } else if (action == 2) { // Local 2-Player
@@ -276,6 +325,8 @@ void Game::processEvents() {
                 } else if (event.key.code == sf::Keyboard::F3) {
                     showBfsDemo_ = !showBfsDemo_;
                     bfsDemoElapsed_ = 0.0f;
+                } else if (event.key.code == sf::Keyboard::Space) {
+                    activatePowerUp(1);
                 }
             }
         }
@@ -312,11 +363,17 @@ void Game::processEvents() {
         else if (state_ == GameState::GameOver) {
             int action = gameOverMenu_.handleEvent(event);
             if (action == 1) { // Retry
+                level_ = 1; runScore_ = 0;
                 resetRound(0);
                 state_ = GameState::Preview;
             } else if (action == 2 || action == -2) { // Main Menu or Esc
                 state_ = GameState::Menu;
                 subScreen_ = MenuSubScreen::Main;
+            }
+        }
+        else if (state_ == GameState::LevelCleared) {
+            if (event.type == sf::Event::KeyPressed && (event.key.code == sf::Keyboard::Return || event.key.code == sf::Keyboard::Space)) {
+                ++level_; resetRound(0); state_ = GameState::Generating;
             }
         }
         else if (state_ == GameState::NameEntry) {
@@ -338,6 +395,10 @@ void Game::processEvents() {
                     stateBeforePause_ = state_;
                     state_ = GameState::TwoPlayerPaused;
                     twoPlayerPauseMenu_.setSelectedIndex(0);
+                } else if (event.key.code == sf::Keyboard::Space) {
+                    activatePowerUp(1);
+                } else if (event.key.code == sf::Keyboard::Return) {
+                    activatePowerUp(2);
                 }
             }
         }
@@ -378,6 +439,11 @@ void Game::processEvents() {
 }
 
 void Game::update(float dt) {
+    float instantFps = dt > 0.0f ? 1.0f / dt : 60.0f;
+    fpsAverage_ += (instantFps - fpsAverage_) * std::min(1.0f, dt * 2.0f);
+    if (fpsAverage_ < cfg::LOW_FX_FPS_THRESHOLD) lowFpsTime_ += dt; else lowFpsTime_ = 0.0f;
+    if (!lowFx_ && lowFpsTime_ >= cfg::LOW_FX_TRIGGER_SECONDS) { lowFx_ = true; toastTime_ = 3.0f; }
+    if (toastTime_ > 0.0f) toastTime_ -= dt;
     if (showControlsTest_) {
         wasdInput_.update(window_);
         arrowInput_.update(window_);
@@ -437,6 +503,7 @@ void Game::update(float dt) {
         inputDr = chosenDir.dr;
         inputDc = chosenDir.dc;
     }
+    updatePowerUps(dt, false);
 
     int prevPlayerR = player_.gridRow();
     int prevPlayerC = player_.gridCol();
@@ -445,7 +512,8 @@ void Game::update(float dt) {
 
     if (playerCanMove) {
         player_.update(dt, inputDr, inputDc, maze_);
-        player_.discoverAround(maze_, cfg::FOG_VISION_RADIUS, cfg::FOG_LIGHT_CONE_EXTRA);
+        int levelFog = std::max(2, cfg::FOG_VISION_RADIUS - (level_ >= 4) - (level_ >= 7));
+        player_.discoverAround(maze_, levelFog, cfg::FOG_LIGHT_CONE_EXTRA);
 
         if (player_.gridRow() != playerLastGridR_ || player_.gridCol() != playerLastGridC_) {
             playerCellsThisSec_++;
@@ -459,11 +527,8 @@ void Game::update(float dt) {
         won_ = true;
         finalSteps_ = player_.steps();
         finalTime_ = roundElapsed_;
-        pendingNameIsTwoPlayer_ = false;
-        pendingScore_ = 1000 + std::max(0, static_cast<int>(600.0f - 5.0f * finalTime_));
-        pendingDetail_ = "escaped in " + std::to_string(static_cast<int>(finalTime_)) + "s";
-        enteredName_.clear();
-        state_ = GameState::NameEntry;
+        runScore_ += 1000 * level_ + std::max(0, static_cast<int>(600.0f - 5.0f * finalTime_));
+        state_ = GameState::LevelCleared;
         gameOverMenu_.setSelectedIndex(0);
         return;
     }
@@ -476,7 +541,8 @@ void Game::update(float dt) {
     }
 
     // Hunter pursuit logic
-    float hunterAwakeLeft = cfg::HUNTER_WAKE_TIME - roundElapsed_;
+    float hunterWake = std::max(5.0f, cfg::HUNTER_WAKE_TIME - static_cast<float>(level_ - 1));
+    float hunterAwakeLeft = hunterWake - roundElapsed_;
     bool hunterIsAwake = (hunterAwakeLeft <= 0.0f);
 
     if (state_ == GameState::Playing) {
@@ -499,8 +565,11 @@ void Game::update(float dt) {
                 won_ = false;
                 finalSteps_ = player_.steps();
                 finalTime_ = roundElapsed_;
-                state_ = GameState::GameOver;
-                gameOverMenu_.setSelectedIndex(0);
+                pendingNameIsTwoPlayer_ = false;
+                pendingScore_ = runScore_;
+                pendingDetail_ = "reached level " + std::to_string(level_);
+                enteredName_.clear();
+                state_ = GameState::NameEntry;
                 return;
             }
         }
@@ -542,6 +611,7 @@ void Game::update(float dt) {
 void Game::updateTwoPlayer(float dt) {
     roundElapsed_ += dt;
     pulseTime_ += dt;
+    updatePowerUps(dt, true);
 
     // Movement timings:
     // Both frozen for first 4.0s
@@ -709,6 +779,12 @@ void Game::render() {
     } else if (state_ == GameState::NameEntry) {
         window_.setView(window_.getDefaultView());
         renderNameEntry();
+    } else if (state_ == GameState::LevelCleared) {
+        window_.setView(window_.getDefaultView());
+        UI::drawAnimatedBackground(window_, menuTime_);
+        UI::drawText(window_, fontOrbitron_, "LEVEL CLEARED", {640, 220}, 48, Theme::Green, true);
+        UI::drawText(window_, fontRajdhaniBold_, "LEVEL " + std::to_string(level_) + "   RUN SCORE " + std::to_string(runScore_), {640, 295}, 26, Theme::Text, true);
+        UI::drawText(window_, fontRajdhaniMedium_, "ENTER / SPACE: NEXT LEVEL", {640, 380}, 20, Theme::Cyan, true);
     } else if (state_ == GameState::TwoPlayerIntermission) {
         window_.setView(window_.getDefaultView());
         renderTwoPlayerIntermission();
@@ -749,37 +825,10 @@ void Game::renderWorld() {
     window_.clear(Theme::Background);
     float pulse = (std::sin(pulseTime_ * cfg::PULSE_SPEED) + 1.0f) * 0.5f;
     bool isPreview = (state_ == GameState::Preview);
-
-    for (int r = 0; r < cfg::MAZE_ROWS; r++) {
-        for (int c = 0; c < cfg::MAZE_COLS; c++) {
-            if (!isPreview && !player_.isDiscovered(r, c)) continue;
-
-            sf::Vector2f pos(static_cast<float>(c * cfg::TILE_SIZE), static_cast<float>(r * cfg::TILE_SIZE));
-            if (maze_.isWall(r, c)) {
-                sf::RectangleShape wallBase(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE), static_cast<float>(cfg::TILE_SIZE)));
-                wallBase.setPosition(pos);
-                wallBase.setFillColor(Theme::WallBase);
-                window_.draw(wallBase);
-
-                sf::RectangleShape wallCap(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE - 2), 3.0f));
-                wallCap.setPosition(pos.x + 1.0f, pos.y + 1.0f);
-                wallCap.setFillColor(Theme::Cyan);
-                window_.draw(wallCap);
-            } else {
-                sf::RectangleShape pathTile(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE), static_cast<float>(cfg::TILE_SIZE)));
-                pathTile.setPosition(pos);
-                pathTile.setFillColor(Theme::PathBase);
-                window_.draw(pathTile);
-            }
-
-            if (r == maze_.exitRow() && c == maze_.exitCol()) {
-                sf::RectangleShape exitGate(sf::Vector2f(static_cast<float>(cfg::TILE_SIZE - 4), static_cast<float>(cfg::TILE_SIZE - 4)));
-                exitGate.setPosition(pos.x + 2.0f, pos.y + 2.0f);
-                exitGate.setFillColor(sf::Color(0, static_cast<sf::Uint8>(180 + pulse * 75), 135));
-                window_.draw(exitGate);
-            }
-        }
-    }
+    if (mazeTextureReady_) window_.draw(mazeSprite_);
+    renderExitPortal(pulse);
+    if (state_ != GameState::Preview) renderFog(player_);
+    renderPowerUps();
 
     sf::Vector2f playerCenter(player_.posX() + cfg::TILE_SIZE / 2.0f, player_.posY() + cfg::TILE_SIZE / 2.0f);
     drawAnimatedPlayer(window_, playerCenter, player_.facingDr(), player_.facingDc(), player_.animFrame(), player_.isMoving(), pulse);
@@ -793,6 +842,104 @@ void Game::renderWorld() {
         sf::Vector2f hunterCenter(hunter_.posX() + cfg::TILE_SIZE / 2.0f, hunter_.posY() + cfg::TILE_SIZE / 2.0f);
         bool isDormant = (roundElapsed_ < cfg::HUNTER_WAKE_TIME);
         drawAnimatedHunter(window_, hunterCenter, hunter_.animFrame(), hunter_.isMoving(), pulse, isDormant);
+    }
+
+    // Precomputed radial image is stretched rather than rebuilt every frame.
+    radialGradientSprite_.setPosition(cameraView_.getCenter().x - cameraView_.getSize().x / 2.0f,
+                                      cameraView_.getCenter().y - cameraView_.getSize().y / 2.0f);
+    radialGradientSprite_.setScale(cameraView_.getSize().x / 128.0f, cameraView_.getSize().y / 128.0f);
+    if (!lowFx_) {
+        float dx = player_.posX() - hunter_.posX(), dy = player_.posY() - hunter_.posY();
+        float proximity = std::max(0.0f, 1.0f - std::sqrt(dx*dx + dy*dy) / (cfg::DANGER_DISTANCE_TILES * cfg::TILE_SIZE));
+        radialGradientSprite_.setColor(sf::Color(255, 35, 65, static_cast<sf::Uint8>(proximity * 180)));
+        window_.draw(radialGradientSprite_);
+    }
+    radialGradientSprite_.setColor(sf::Color::White);
+    window_.draw(radialGradientSprite_);
+}
+
+void Game::renderFog(const Player& viewer) {
+    sf::VertexArray fog(sf::Quads, cfg::MAZE_ROWS * cfg::MAZE_COLS * 4);
+    const float maxDistance = static_cast<float>(cfg::FOG_VISION_RADIUS + cfg::FOG_LIGHT_CONE_EXTRA);
+    std::size_t index = 0;
+    for (int r = 0; r < cfg::MAZE_ROWS; ++r) for (int c = 0; c < cfg::MAZE_COLS; ++c) {
+        int alpha = 245;
+        if (viewer.isDiscovered(r,c)) alpha = 190;
+        if (viewer.canSeeNow(r,c)) {
+            float dr = static_cast<float>(r - viewer.gridRow()), dc = static_cast<float>(c - viewer.gridCol());
+            alpha = static_cast<int>(std::min(145.0f, 18.0f + 125.0f * std::sqrt(dr*dr + dc*dc) / maxDistance));
+        }
+        sf::Color color(4, 8, 17, static_cast<sf::Uint8>(alpha));
+        float x = c * cfg::TILE_SIZE, y = r * cfg::TILE_SIZE, s = cfg::TILE_SIZE;
+        fog[index++] = sf::Vertex({x,y}, color); fog[index++] = sf::Vertex({x+s,y}, color);
+        fog[index++] = sf::Vertex({x+s,y+s}, color); fog[index++] = sf::Vertex({x,y+s}, color);
+    }
+    window_.draw(fog);
+}
+
+void Game::renderExitPortal(float pulse) {
+    sf::Vector2f center((maze_.exitCol() + 0.5f) * cfg::TILE_SIZE, (maze_.exitRow() + 0.5f) * cfg::TILE_SIZE);
+    for (int ring = 0; ring < 2; ++ring) {
+        sf::CircleShape shape(11.0f + ring * 4.0f, 32); shape.setOrigin(shape.getRadius(), shape.getRadius()); shape.setPosition(center);
+        shape.setFillColor(sf::Color::Transparent); shape.setOutlineThickness(1.5f); shape.setOutlineColor(sf::Color(0, 255, 135, static_cast<sf::Uint8>(130 + pulse * 100)));
+        shape.setRotation((ring ? -1.0f : 1.0f) * pulseTime_ * cfg::PORTAL_ROTATION_SPEED); window_.draw(shape);
+    }
+    sf::CircleShape core(5.0f + pulse * 3.0f); core.setOrigin(core.getRadius(), core.getRadius()); core.setPosition(center); core.setFillColor(sf::Color(0,255,135,180)); window_.draw(core);
+}
+
+void Game::spawnPowerUps(bool twoPlayer) {
+    powerUps_.clear(); p1Charge_ = p2Charge_ = PowerUpType::None; p1PowerTime_ = p2PowerTime_ = 0.0f;
+    std::vector<std::pair<int,int>> candidates;
+    int runnerR = twoPlayer ? tpRunner_.gridRow() : player_.gridRow();
+    int runnerC = twoPlayer ? tpRunner_.gridCol() : player_.gridCol();
+    int hunterR = twoPlayer ? tpHunter_.gridRow() : hunter_.gridRow();
+    int hunterC = twoPlayer ? tpHunter_.gridCol() : hunter_.gridCol();
+    for (int r = 1; r < cfg::MAZE_ROWS - 1; ++r) for (int c = 1; c < cfg::MAZE_COLS - 1; ++c) {
+        if (maze_.isWall(r,c) || std::abs(r-runnerR)+std::abs(c-runnerC) < 10 || std::abs(r-hunterR)+std::abs(c-hunterC) < 10) continue;
+        int open = !maze_.isWall(r-1,c) + !maze_.isWall(r+1,c) + !maze_.isWall(r,c-1) + !maze_.isWall(r,c+1);
+        if (open == 1) candidates.push_back({r,c});
+    }
+    if (candidates.empty()) return;
+    powerUps_.push_back({PowerUpType::Surge, candidates[0].first, candidates[0].second, 0.0f});
+    if (twoPlayer) {
+        powerUps_.push_back({PowerUpType::Dash, candidates[candidates.size()/3].first, candidates[candidates.size()/3].second, 0.0f});
+        powerUps_.push_back({PowerUpType::Ping, candidates[candidates.size()*2/3].first, candidates[candidates.size()*2/3].second, 0.0f});
+    }
+}
+
+void Game::activatePowerUp(int playerNumber) {
+    PowerUpType& charge = playerNumber == 1 ? p1Charge_ : p2Charge_;
+    float& timer = playerNumber == 1 ? p1PowerTime_ : p2PowerTime_;
+    if (charge == PowerUpType::None || timer > 0.0f) return;
+    timer = charge == PowerUpType::Surge ? cfg::SURGE_DURATION : charge == PowerUpType::Dash ? cfg::DASH_DURATION : cfg::PING_DURATION;
+}
+
+void Game::updatePowerUps(float dt, bool twoPlayer) {
+    p1PowerTime_ = std::max(0.0f, p1PowerTime_ - dt); p2PowerTime_ = std::max(0.0f, p2PowerTime_ - dt);
+    if (!twoPlayer) player_.setSpeedMultiplier(p1Charge_ == PowerUpType::Surge && p1PowerTime_ > 0 ? cfg::SURGE_MULTIPLIER : 1.0f);
+    else {
+        float p1Mult = p1PowerTime_ > 0 && p1Charge_ == PowerUpType::Surge ? cfg::SURGE_MULTIPLIER : p1PowerTime_ > 0 && p1Charge_ == PowerUpType::Dash ? cfg::DASH_MULTIPLIER : 1.0f;
+        float p2Mult = p2PowerTime_ > 0 && p2Charge_ == PowerUpType::Surge ? cfg::SURGE_MULTIPLIER : p2PowerTime_ > 0 && p2Charge_ == PowerUpType::Dash ? cfg::DASH_MULTIPLIER : 1.0f;
+        if (twoPlayerRound_ == 1) { tpRunner_.setSpeedMultiplier(p1Mult); tpHunter_.setSpeedMultiplier(p2Mult); }
+        else { tpHunter_.setSpeedMultiplier(p1Mult); tpRunner_.setSpeedMultiplier(p2Mult); }
+    }
+    for (auto& pickup : powerUps_) {
+        if (pickup.respawn > 0) { pickup.respawn -= dt; continue; }
+        auto consume = [&](int number, bool isRunner, int r, int c) {
+            if (r != pickup.row || c != pickup.col) return;
+            if ((pickup.type == PowerUpType::Surge && !isRunner) || ((pickup.type == PowerUpType::Dash || pickup.type == PowerUpType::Ping) && isRunner)) return;
+            PowerUpType& charge = number == 1 ? p1Charge_ : p2Charge_;
+            if (charge == PowerUpType::None) { charge = pickup.type; pickup.respawn = cfg::POWERUP_RESPAWN_SECONDS; }
+        };
+        if (!twoPlayer) consume(1, true, player_.gridRow(), player_.gridCol());
+        else { consume(1, twoPlayerRound_ == 1, twoPlayerRound_ == 1 ? tpRunner_.gridRow() : tpHunter_.gridRow(), twoPlayerRound_ == 1 ? tpRunner_.gridCol() : tpHunter_.gridCol()); consume(2, twoPlayerRound_ != 1, twoPlayerRound_ == 1 ? tpHunter_.gridRow() : tpRunner_.gridRow(), twoPlayerRound_ == 1 ? tpHunter_.gridCol() : tpRunner_.gridCol()); }
+    }
+}
+
+void Game::renderPowerUps() {
+    for (const auto& pickup : powerUps_) if (pickup.respawn <= 0.0f) {
+        sf::CircleShape icon(6.0f); icon.setOrigin(6,6); icon.setPosition((pickup.col+.5f)*cfg::TILE_SIZE, (pickup.row+.5f)*cfg::TILE_SIZE);
+        icon.setFillColor(pickup.type == PowerUpType::Surge ? Theme::Cyan : pickup.type == PowerUpType::Dash ? Theme::Crimson : Theme::Amber); window_.draw(icon);
     }
 }
 
@@ -819,6 +966,7 @@ void Game::renderTwoPlayer() {
 void Game::renderTwoPlayerHalf(int playerNum, PlayerRole role, const sf::View& /*view*/, bool isPreview) {
     (void)playerNum;
     float pulse = (std::sin(pulseTime_ * cfg::PULSE_SPEED) + 1.0f) * 0.5f;
+    renderPowerUps();
 
     for (int r = 0; r < cfg::MAZE_ROWS; r++) {
         for (int c = 0; c < cfg::MAZE_COLS; c++) {
@@ -863,7 +1011,9 @@ void Game::renderTwoPlayerHalf(int playerNum, PlayerRole role, const sf::View& /
     if (!runnerVisible && role == PlayerRole::Hunter) {
         bool inHunterLOS = tpHunter_.canSeeNow(tpRunner_.gridRow(), tpRunner_.gridCol());
         bool blipActive = (std::fmod(roundElapsed_, cfg::TWO_P_RUNNER_BLIP_CYCLE) < cfg::TWO_P_RUNNER_BLIP_DURATION);
-        runnerVisible = (inHunterLOS || blipActive);
+        bool pingActive = (twoPlayerRound_ == 1) ? (p2Charge_ == PowerUpType::Ping && p2PowerTime_ > 0.0f)
+                                                  : (p1Charge_ == PowerUpType::Ping && p1PowerTime_ > 0.0f);
+        runnerVisible = (inHunterLOS || blipActive || pingActive);
     }
 
     if (runnerVisible) {
@@ -1168,8 +1318,9 @@ void Game::renderHUD() {
 
     std::string hunterStatusStr;
     sf::Color hunterStatusCol;
-    if (roundElapsed_ < cfg::HUNTER_WAKE_TIME) {
-        float left = cfg::HUNTER_WAKE_TIME - roundElapsed_;
+    float hunterWake = std::max(5.0f, cfg::HUNTER_WAKE_TIME - static_cast<float>(level_ - 1));
+    if (roundElapsed_ < hunterWake) {
+        float left = hunterWake - roundElapsed_;
         if (state_ == GameState::Preview) {
             hunterStatusStr = "HUNTER: DORMANT";
             hunterStatusCol = Theme::Amber;
@@ -1190,6 +1341,15 @@ void Game::renderHUD() {
     ssSeed << "SEED: " << maze_.seed();
     UI::drawText(window_, fontRajdhaniMedium_, ssSeed.str(),
                  sf::Vector2f(static_cast<float>(cfg::WINDOW_WIDTH) - 180.0f, 14.0f), 20, Theme::TextDim);
+    UI::drawText(window_, fontRajdhaniMedium_, lowFx_ ? "F2 LOW FX" : "F2 FX HIGH",
+                 sf::Vector2f(20.0f, 62.0f), 16, lowFx_ ? Theme::Amber : Theme::TextMuted);
+    if (showFps_) UI::drawText(window_, fontRajdhaniBold_, "FPS " + std::to_string(static_cast<int>(fpsAverage_)),
+                               sf::Vector2f(20.0f, 84.0f), 16, Theme::Green);
+    if (toastTime_ > 0.0f) UI::drawText(window_, fontRajdhaniBold_, lowFx_ ? "LOW FX ENABLED" : "FX MODE CHANGED",
+                                        sf::Vector2f(640.0f, 82.0f), 17, Theme::Amber, true);
+    std::string powerLabel = p1Charge_ == PowerUpType::Surge ? "SURGE" : "EMPTY";
+    UI::drawPanel(window_, {20, 106, 130, 35}, Theme::Panel, p1PowerTime_ > 0 ? Theme::Cyan : Theme::PanelOutline, 2);
+    UI::drawText(window_, fontRajdhaniBold_, powerLabel + " [SPACE]", {28, 114}, 14, p1PowerTime_ > 0 ? Theme::Cyan : Theme::TextDim);
 
     float mapSize = cfg::MINIMAP_SIZE;
     float mapX = static_cast<float>(cfg::WINDOW_WIDTH) - mapSize - cfg::MINIMAP_PADDING;

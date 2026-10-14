@@ -38,6 +38,19 @@ constexpr float GENERATION_DFS_SECONDS = 4.0f;
 constexpr float GENERATION_BRAID_SECONDS = 0.8f;
 constexpr int GENERATION_STACK_VISIBLE = 12;
 constexpr float BFS_DEMO_WAVE_SECONDS = 1.2f;
+// Rendering / accessibility
+constexpr float LOW_FX_FPS_THRESHOLD = 45.0f;
+constexpr float LOW_FX_TRIGGER_SECONDS = 3.0f;
+constexpr int LOW_FX_PARTICLE_CAP = 40;
+constexpr int PARTICLE_CAP = 150;
+constexpr float DANGER_DISTANCE_TILES = 11.0f;
+constexpr float PORTAL_ROTATION_SPEED = 70.0f;
+constexpr float POWERUP_RESPAWN_SECONDS = 10.0f;
+constexpr float SURGE_DURATION = 2.0f;
+constexpr float DASH_DURATION = 1.0f;
+constexpr float SURGE_MULTIPLIER = 1.6f;
+constexpr float DASH_MULTIPLIER = 1.8f;
+constexpr float PING_DURATION = 2.0f;
 constexpr int GENERATION_DFS_STEPS_PER_FRAME = 6;
 constexpr int GENERATION_BRAID_STEPS_PER_FRAME = 1;
 

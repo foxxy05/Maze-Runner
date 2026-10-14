@@ -9,6 +9,7 @@
 #include "Leaderboard.h"
 #include "Config.h"
 #include <string>
+#include <vector>
 
 enum class GameState {
     Menu,
@@ -23,6 +24,7 @@ enum class GameState {
     TwoPlayerMatchOver
     , Generating
     , NameEntry
+    , LevelCleared
 };
 
 enum class MenuSubScreen {
@@ -54,6 +56,9 @@ struct TwoPlayerRoundData {
     float p2EscapeTime = -1.0f;
 };
 
+enum class PowerUpType { None, Surge, Dash, Ping };
+struct PowerUpPickup { PowerUpType type = PowerUpType::None; int row = -1; int col = -1; float respawn = 0.0f; };
+
 class Game {
 public:
     explicit Game(unsigned int seed = 0);
@@ -83,6 +88,14 @@ private:
     void renderNameEntry();
     void renderBfsDemo();
     void finishGeneratedRound();
+    void rebuildMazeTexture();
+    void buildRadialGradient();
+    void renderFog(const Player& viewer);
+    void renderExitPortal(float pulse);
+    void spawnPowerUps(bool twoPlayer);
+    void updatePowerUps(float dt, bool twoPlayer);
+    void renderPowerUps();
+    void activatePowerUp(int playerNumber);
 
     // Two Player renders
     void updateTwoPlayer(float dt);
@@ -108,6 +121,11 @@ private:
     sf::View p2PreviewView_;
     sf::Vector2f p1CameraPos_{0.0f, 0.0f};
     sf::Vector2f p2CameraPos_{0.0f, 0.0f};
+    sf::RenderTexture mazeTexture_;
+    sf::Sprite mazeSprite_;
+    sf::Texture radialGradientTexture_;
+    sf::Sprite radialGradientSprite_;
+    bool mazeTextureReady_ = false;
 
     // Fonts
     sf::Font fontOrbitron_;
@@ -143,6 +161,18 @@ private:
     std::string pendingDetail_;
     Leaderboard leaderboard_;
     int leaderboardTraversal_ = 1;
+    bool lowFx_ = false;
+    bool showFps_ = false;
+    float fpsAverage_ = 60.0f;
+    float lowFpsTime_ = 0.0f;
+    float toastTime_ = 0.0f;
+    std::vector<PowerUpPickup> powerUps_;
+    PowerUpType p1Charge_ = PowerUpType::None;
+    PowerUpType p2Charge_ = PowerUpType::None;
+    float p1PowerTime_ = 0.0f;
+    float p2PowerTime_ = 0.0f;
+    int level_ = 1;
+    int runScore_ = 0;
 
     // Single Player variables
     bool won_ = false;

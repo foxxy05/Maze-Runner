@@ -1,2 +1,7 @@
 wowo	1475	SP	escaped in 24s	1
+at	0	SP	reached level 1	3
+at	0	SP	reached level 1	4
+at	0	SP	reached level 1	5
 hehehe	1931	2P	P2 match total	2
+PLAYER	1911	2P	P2 match total	7
+ aw	536661	SP	reached level 2	6
