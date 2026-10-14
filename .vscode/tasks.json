@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build & Run Maze Chase",
+            "type": "shell",
+            "command": "cmake --build build; .\\build\\MazeChase.exe",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$gcc",
+            "detail": "Compiles CMake project and launches MazeChase.exe"
+        }
+    ]
+}
