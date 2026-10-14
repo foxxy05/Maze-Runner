@@ -5,6 +5,16 @@ DirectionInput::DirectionInput(KeySet keys)
     : keys_(keys) {
 }
 
+void DirectionInput::reset(const sf::Window& window) {
+    const sf::Keyboard::Key keyList[4] = {keys_.up, keys_.down, keys_.left, keys_.right};
+    pressOrder_.clear();
+    currentDir_ = {0, 0};
+    lastPressTick_ = 0;
+    for (int i = 0; i < 4; ++i) {
+        prevPressed_[i] = window.hasFocus() && sf::Keyboard::isKeyPressed(keyList[i]);
+    }
+}
+
 Direction DirectionInput::update(const sf::Window& window) {
     if (!window.hasFocus()) {
         currentDir_ = {0, 0};

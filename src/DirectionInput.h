@@ -21,6 +21,7 @@ public:
     explicit DirectionInput(KeySet keys);
 
     Direction update(const sf::Window& window);
+    void reset(const sf::Window& window);
     Direction currentDirection() const { return currentDir_; }
     unsigned long long lastPressTick() const { return lastPressTick_; }
 

@@ -159,6 +159,11 @@ void Game::loadFonts() {
 }
 
 void Game::resetRound(unsigned int seed) {
+    wasdInput_.reset(window_);
+    arrowInput_.reset(window_);
+    showBfsDemo_ = false;
+    bfsDemoElapsed_ = 0.0f;
+    shownBfsRevision_ = 0;
     maze_.beginGenerate(seed);
     generationForTwoPlayer_ = false;
     generationSpeed_ = 1.0f;
@@ -231,6 +236,9 @@ void Game::startTwoPlayerMatch(unsigned int seed) {
 }
 
 void Game::startTwoPlayerRound(int roundNum) {
+    wasdInput_.reset(window_);
+    arrowInput_.reset(window_);
+    showBfsDemo_ = false;
     twoPlayerRound_ = roundNum;
     maze_.beginGenerate(twoPlayerMatchSeed_); // Same seed makes the same maze for both rounds.
     generationForTwoPlayer_ = true;
@@ -314,6 +322,8 @@ void Game::processEvents() {
                 if (event.key.code == sf::Keyboard::Escape) {
                     stateBeforePause_ = state_;
                     state_ = GameState::Paused;
+                    wasdInput_.reset(window_);
+                    arrowInput_.reset(window_);
                     pauseMenu_.setSelectedIndex(0);
                 } else if (event.key.code == sf::Keyboard::R) {
                     resetRound(0);
@@ -361,7 +371,7 @@ void Game::processEvents() {
             if (action == 1) { // Retry
                 level_ = 1; runScore_ = 0;
                 resetRound(0);
-                state_ = GameState::Preview;
+                state_ = GameState::Generating;
             } else if (action == 2 || action == -2) { // Main Menu or Esc
                 state_ = GameState::Menu;
                 subScreen_ = MenuSubScreen::Main;
@@ -390,6 +400,8 @@ void Game::processEvents() {
                 if (event.key.code == sf::Keyboard::Escape) {
                     stateBeforePause_ = state_;
                     state_ = GameState::TwoPlayerPaused;
+                    wasdInput_.reset(window_);
+                    arrowInput_.reset(window_);
                     twoPlayerPauseMenu_.setSelectedIndex(0);
                 } else if (event.key.code == sf::Keyboard::Space) {
                     activatePowerUp(1);
@@ -437,9 +449,15 @@ void Game::processEvents() {
 void Game::update(float dt) {
     float instantFps = dt > 0.0f ? 1.0f / dt : 60.0f;
     fpsAverage_ += (instantFps - fpsAverage_) * std::min(1.0f, dt * 2.0f);
-    if (fpsAverage_ < cfg::LOW_FX_FPS_THRESHOLD) lowFpsTime_ += dt; else lowFpsTime_ = 0.0f;
-    if (!lowFx_ && lowFpsTime_ >= cfg::LOW_FX_TRIGGER_SECONDS) { lowFx_ = true; toastTime_ = 3.0f; }
-    if (toastTime_ > 0.0f) toastTime_ -= dt;
+    const bool freezeUiTimers = state_ == GameState::Generating || state_ == GameState::Paused ||
+                                state_ == GameState::TwoPlayerPaused;
+    if (freezeUiTimers) {
+        lowFpsTime_ = 0.0f;
+    } else {
+        if (fpsAverage_ < cfg::LOW_FX_FPS_THRESHOLD) lowFpsTime_ += dt; else lowFpsTime_ = 0.0f;
+        if (!lowFx_ && lowFpsTime_ >= cfg::LOW_FX_TRIGGER_SECONDS) { lowFx_ = true; toastTime_ = 3.0f; }
+        if (toastTime_ > 0.0f) toastTime_ -= dt;
+    }
     if (showControlsTest_) {
         wasdInput_.update(window_);
         arrowInput_.update(window_);
