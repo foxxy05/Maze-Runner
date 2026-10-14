@@ -7,6 +7,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj.d"
   "CMakeFiles/MazeChase.dir/src/Hunter.cpp.obj"
   "CMakeFiles/MazeChase.dir/src/Hunter.cpp.obj.d"
+  "CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj"
+  "CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj.d"
   "CMakeFiles/MazeChase.dir/src/Maze.cpp.obj"
   "CMakeFiles/MazeChase.dir/src/Maze.cpp.obj.d"
   "CMakeFiles/MazeChase.dir/src/Pathfinder.cpp.obj"

@@ -341,6 +341,30 @@ src/Hunter.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Hunter.cpp.s
 .PHONY : src/Hunter.cpp.s
 
+src/Leaderboard.obj: src/Leaderboard.cpp.obj
+.PHONY : src/Leaderboard.obj
+
+# target to build an object file
+src/Leaderboard.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj
+.PHONY : src/Leaderboard.cpp.obj
+
+src/Leaderboard.i: src/Leaderboard.cpp.i
+.PHONY : src/Leaderboard.i
+
+# target to preprocess a source file
+src/Leaderboard.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.i
+.PHONY : src/Leaderboard.cpp.i
+
+src/Leaderboard.s: src/Leaderboard.cpp.s
+.PHONY : src/Leaderboard.s
+
+# target to generate assembly for a file
+src/Leaderboard.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\MazeChase.dir\build.make CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.s
+.PHONY : src/Leaderboard.cpp.s
+
 src/Maze.obj: src/Maze.cpp.obj
 .PHONY : src/Maze.obj
 
@@ -492,6 +516,9 @@ help:
 	@echo ... src/Hunter.obj
 	@echo ... src/Hunter.i
 	@echo ... src/Hunter.s
+	@echo ... src/Leaderboard.obj
+	@echo ... src/Leaderboard.i
+	@echo ... src/Leaderboard.s
 	@echo ... src/Maze.obj
 	@echo ... src/Maze.i
 	@echo ... src/Maze.s

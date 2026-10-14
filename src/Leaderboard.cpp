@@ -32,6 +32,7 @@ std::string Leaderboard::filePath() const {
 void Leaderboard::load() {
     entries_.clear();
     nextInsertionId_ = 1;
+    latestInsertionId_ = 0;
     std::ifstream input(filePath());
     std::string line;
     while (std::getline(input, line)) {
@@ -48,6 +49,7 @@ void Leaderboard::load() {
         entry.name = entry.name.substr(0, 10);
         entries_.insert(entry); // File is pre-order, preserving the exact BST shape.
         nextInsertionId_ = std::max(nextInsertionId_, entry.insertionId + 1);
+        latestInsertionId_ = std::max(latestInsertionId_, entry.insertionId);
     }
 }
 
@@ -64,7 +66,9 @@ bool Leaderboard::save() const {
 void Leaderboard::add(std::string name, int score, const std::string& mode, const std::string& detail) {
     name.erase(std::remove_if(name.begin(), name.end(), [](char c) { return c == '\t' || c == '\n' || c == '\r'; }), name.end());
     if (name.empty()) name = "PLAYER";
-    entries_.insert({name.substr(0, 10), score, mode, detail, nextInsertionId_++});
+    const unsigned long long insertionId = nextInsertionId_++;
+    entries_.insert({name.substr(0, 10), score, mode, detail, insertionId});
+    latestInsertionId_ = insertionId;
     save();
 }
 

@@ -25,6 +25,7 @@ public:
     void add(std::string name, int score, const std::string& mode, const std::string& detail);
 
     const dsa_lib::BST<LeaderboardEntry, LeaderboardCompare>& tree() const { return entries_; }
+    unsigned long long latestInsertionId() const { return latestInsertionId_; }
     std::vector<LeaderboardEntry> top(int limit = 10) const;
     std::vector<LeaderboardEntry> traversal(int order) const; // 1=in, 2=pre, 3=post
 
@@ -32,5 +33,6 @@ private:
     std::string filePath() const;
     dsa_lib::BST<LeaderboardEntry, LeaderboardCompare> entries_;
     unsigned long long nextInsertionId_ = 1;
+    unsigned long long latestInsertionId_ = 0;
 };
 

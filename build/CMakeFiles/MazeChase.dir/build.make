@@ -176,11 +176,26 @@ CMakeFiles/MazeChase.dir/src/Game.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/MazeChase.dir/src/Game.cpp.s"
 	C:\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\src\Game.cpp -o CMakeFiles\MazeChase.dir\src\Game.cpp.s
 
+CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj: CMakeFiles/MazeChase.dir/flags.make
+CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj: CMakeFiles/MazeChase.dir/includes_CXX.rsp
+CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj: G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/src/Leaderboard.cpp
+CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj: CMakeFiles/MazeChase.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj"
+	C:\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj -MF CMakeFiles\MazeChase.dir\src\Leaderboard.cpp.obj.d -o CMakeFiles\MazeChase.dir\src\Leaderboard.cpp.obj -c G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\src\Leaderboard.cpp
+
+CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.i"
+	C:\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\src\Leaderboard.cpp > CMakeFiles\MazeChase.dir\src\Leaderboard.cpp.i
+
+CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.s"
+	C:\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\src\Leaderboard.cpp -o CMakeFiles\MazeChase.dir\src\Leaderboard.cpp.s
+
 CMakeFiles/MazeChase.dir/src/UI.cpp.obj: CMakeFiles/MazeChase.dir/flags.make
 CMakeFiles/MazeChase.dir/src/UI.cpp.obj: CMakeFiles/MazeChase.dir/includes_CXX.rsp
 CMakeFiles/MazeChase.dir/src/UI.cpp.obj: G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/src/UI.cpp
 CMakeFiles/MazeChase.dir/src/UI.cpp.obj: CMakeFiles/MazeChase.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/MazeChase.dir/src/UI.cpp.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/MazeChase.dir/src/UI.cpp.obj"
 	C:\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/MazeChase.dir/src/UI.cpp.obj -MF CMakeFiles\MazeChase.dir\src\UI.cpp.obj.d -o CMakeFiles\MazeChase.dir\src\UI.cpp.obj -c G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\src\UI.cpp
 
 CMakeFiles/MazeChase.dir/src/UI.cpp.i: cmake_force
@@ -195,7 +210,7 @@ CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj: CMakeFiles/MazeChase.dir/flags.m
 CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj: CMakeFiles/MazeChase.dir/includes_CXX.rsp
 CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj: G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/src/GridMover.cpp
 CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj: CMakeFiles/MazeChase.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj"
 	C:\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj -MF CMakeFiles\MazeChase.dir\src\GridMover.cpp.obj.d -o CMakeFiles\MazeChase.dir\src\GridMover.cpp.obj -c G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\src\GridMover.cpp
 
 CMakeFiles/MazeChase.dir/src/GridMover.cpp.i: cmake_force
@@ -215,6 +230,7 @@ MazeChase_OBJECTS = \
 "CMakeFiles/MazeChase.dir/src/DirectionInput.cpp.obj" \
 "CMakeFiles/MazeChase.dir/src/Pathfinder.cpp.obj" \
 "CMakeFiles/MazeChase.dir/src/Game.cpp.obj" \
+"CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj" \
 "CMakeFiles/MazeChase.dir/src/UI.cpp.obj" \
 "CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj"
 
@@ -228,6 +244,7 @@ MazeChase.exe: CMakeFiles/MazeChase.dir/src/Hunter.cpp.obj
 MazeChase.exe: CMakeFiles/MazeChase.dir/src/DirectionInput.cpp.obj
 MazeChase.exe: CMakeFiles/MazeChase.dir/src/Pathfinder.cpp.obj
 MazeChase.exe: CMakeFiles/MazeChase.dir/src/Game.cpp.obj
+MazeChase.exe: CMakeFiles/MazeChase.dir/src/Leaderboard.cpp.obj
 MazeChase.exe: CMakeFiles/MazeChase.dir/src/UI.cpp.obj
 MazeChase.exe: CMakeFiles/MazeChase.dir/src/GridMover.cpp.obj
 MazeChase.exe: CMakeFiles/MazeChase.dir/build.make
@@ -237,7 +254,7 @@ MazeChase.exe: _deps/sfml-build/lib/libsfml-system.a
 MazeChase.exe: CMakeFiles/MazeChase.dir/linkLibs.rsp
 MazeChase.exe: CMakeFiles/MazeChase.dir/objects1.rsp
 MazeChase.exe: CMakeFiles/MazeChase.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable MazeChase.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=G:\WINDOWS\EVERYTHING\COLLEGE\TY\SEM5\MDM\Maze-Runner\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable MazeChase.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\MazeChase.dir\link.txt --verbose=$(VERBOSE)
 	"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/sfml-graphics-2.dll G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/sfml-window-2.dll G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/_deps/sfml-build/lib/sfml-system-2.dll G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build
 	"C:\Program Files\CMake\bin\cmake.exe" -E copy_directory G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/assets G:/WINDOWS/EVERYTHING/COLLEGE/TY/SEM5/MDM/Maze-Runner/build/assets

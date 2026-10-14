@@ -89,6 +89,8 @@ private:
     void renderGeneration();
     void renderNameEntry();
     void renderBfsDemo();
+    bool qualifiesForLeaderboard(int score) const;
+    void clearPendingScore();
     void finishGeneratedRound();
     void rebuildMazeTexture();
     void buildRadialGradient();

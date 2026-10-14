@@ -157,6 +157,7 @@ void Game::loadFonts() {
 }
 
 void Game::resetRound(unsigned int seed) {
+    clearPendingScore();
     wasdInput_.reset(window_);
     arrowInput_.reset(window_);
     showBfsDemo_ = false;
@@ -219,6 +220,7 @@ void Game::finishGeneratedRound() {
 }
 
 void Game::startTwoPlayerMatch(unsigned int seed) {
+    clearPendingScore();
     if (seed == 0) {
         auto nano = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         twoPlayerMatchSeed_ = static_cast<unsigned int>(nano ^ std::random_device{}());
@@ -231,6 +233,19 @@ void Game::startTwoPlayerMatch(unsigned int seed) {
     round2Data_ = TwoPlayerRoundData();
     twoPlayerRound_ = 1;
     startTwoPlayerRound(1);
+}
+
+void Game::clearPendingScore() {
+    pendingNameIsTwoPlayer_ = false;
+    pendingScore_ = 0;
+    pendingDetail_.clear();
+    enteredName_.clear();
+}
+
+bool Game::qualifiesForLeaderboard(int score) const {
+    if (score <= 0) return false;
+    const auto best = leaderboard_.top(10);
+    return best.size() < 10 || score > best.back().score;
 }
 
 void Game::startTwoPlayerRound(int roundNum) {
@@ -388,7 +403,13 @@ void Game::processEvents() {
                 if (event.key.code == sf::Keyboard::BackSpace && !enteredName_.empty()) enteredName_.pop_back();
                 else if (event.key.code == sf::Keyboard::Return) {
                     leaderboard_.add(enteredName_, pendingScore_, pendingNameIsTwoPlayer_ ? "2P" : "SP", pendingDetail_);
-                    state_ = pendingNameIsTwoPlayer_ ? GameState::TwoPlayerMatchOver : GameState::GameOver;
+                    clearPendingScore();
+                    state_ = GameState::Menu;
+                    subScreen_ = MenuSubScreen::Main;
+                } else if (event.key.code == sf::Keyboard::Escape) {
+                    clearPendingScore();
+                    state_ = GameState::Menu;
+                    subScreen_ = MenuSubScreen::Main;
                 }
             }
         }
@@ -480,6 +501,7 @@ void Game::update(float dt) {
     }
 
     if (state_ == GameState::Paused || state_ == GameState::GameOver ||
+        state_ == GameState::NameEntry || state_ == GameState::LevelCleared ||
         state_ == GameState::TwoPlayerPaused || state_ == GameState::TwoPlayerIntermission ||
         state_ == GameState::TwoPlayerMatchOver) {
         return;
@@ -575,7 +597,12 @@ void Game::update(float dt) {
                 pendingScore_ = runScore_;
                 pendingDetail_ = "reached level " + std::to_string(level_);
                 enteredName_.clear();
-                state_ = GameState::NameEntry;
+                if (qualifiesForLeaderboard(pendingScore_)) {
+                    state_ = GameState::NameEntry;
+                } else {
+                    clearPendingScore();
+                    state_ = GameState::GameOver;
+                }
                 return;
             }
         }
@@ -713,7 +740,12 @@ void Game::updateTwoPlayer(float dt) {
             pendingScore_ = std::max(p1Total, p2Total);
             pendingDetail_ = std::string("P") + (p1Total >= p2Total ? "1" : "2") + " match total";
             enteredName_.clear();
-            state_ = GameState::NameEntry;
+            if (qualifiesForLeaderboard(pendingScore_)) {
+                state_ = GameState::NameEntry;
+            } else {
+                clearPendingScore();
+                state_ = GameState::TwoPlayerMatchOver;
+            }
             twoPlayerMatchOverMenu_.setSelectedIndex(0);
         }
     };
@@ -1351,25 +1383,127 @@ void Game::renderLeaderboard() {
     std::ostringstream stats;
     stats << "Nodes: " << leaderboard_.tree().size() << "   Height: " << leaderboard_.tree().height();
     UI::drawText(window_, fontRajdhaniMedium_, stats.str(), sf::Vector2f(675, 260), 18, Theme::Text);
-    const auto* root = leaderboard_.tree().getRoot();
-    std::function<void(const dsa_lib::BST<LeaderboardEntry, LeaderboardCompare>::Node*, float, float, int)> drawTree;
-    drawTree = [&](const auto* node, float x, float ty, int level) {
-        if (!node || level >= 3) return;
-        float offset = 145.0f / static_cast<float>(level + 1);
-        if (node->left) { sf::Vertex line[] = {sf::Vertex({x, ty}), sf::Vertex({x-offset, ty+75})}; window_.draw(line, 2, sf::Lines); }
-        if (node->right) { sf::Vertex line[] = {sf::Vertex({x, ty}), sf::Vertex({x+offset, ty+75})}; window_.draw(line, 2, sf::Lines); }
-        drawTree(node->left, x-offset, ty+75, level+1); drawTree(node->right, x+offset, ty+75, level+1);
-        sf::CircleShape circle(24); circle.setOrigin(24,24); circle.setPosition(x,ty); circle.setFillColor(Theme::Background); circle.setOutlineColor(Theme::Cyan); circle.setOutlineThickness(2); window_.draw(circle);
-        UI::drawText(window_, fontRajdhaniBold_, std::to_string(node->data.score), {x,ty}, 14, Theme::Text, true);
+    using TreeNode = dsa_lib::BST<LeaderboardEntry, LeaderboardCompare>::Node;
+    const auto& tree = leaderboard_.tree();
+    const TreeNode* root = tree.getRoot();
+    std::vector<const TreeNode*> inOrderNodes;
+    std::function<void(const TreeNode*)> collectInOrder = [&](const TreeNode* node) {
+        if (!node) return;
+        collectInOrder(node->left);
+        inOrderNodes.push_back(node);
+        collectInOrder(node->right);
     };
-    drawTree(root, 937, 340, 0);
+    collectInOrder(root);
+
+    // Rebuild positions from the live tree on every draw; no diagram cache can go stale.
+    const LeaderboardCompare treeCompare;
+    auto nodeIndex = [&](const TreeNode* node) {
+        const auto it = std::lower_bound(inOrderNodes.begin(), inOrderNodes.end(), node,
+            [&](const TreeNode* lhs, const TreeNode* rhs) {
+                return treeCompare(lhs->data, rhs->data);
+            });
+        return static_cast<size_t>(it - inOrderNodes.begin());
+    };
+    std::string latestLabel = "Latest: none";
+    for (const TreeNode* node : inOrderNodes) {
+        if (node->data.insertionId == leaderboard_.latestInsertionId()) {
+            latestLabel = "Latest: " + node->data.name + "  " + std::to_string(node->data.score);
+            break;
+        }
+    }
+    UI::drawText(window_, fontRajdhaniMedium_, latestLabel, {675.0f, 282.0f}, 16, Theme::Amber);
+
+    const int nodeCount = static_cast<int>(inOrderNodes.size());
+    const int treeHeight = tree.height();
+    const bool truncated = treeHeight > 5 || nodeCount > 31;
+    const int visibleLevels = std::min(treeHeight, 5);
+    const float treeLeft = 690.0f;
+    const float treeRight = 1185.0f;
+    const float treeTop = 312.0f;
+    const float treeBottom = 535.0f;
+    const float xStep = nodeCount > 1 ? (treeRight - treeLeft) / static_cast<float>(nodeCount - 1) : treeRight - treeLeft;
+    const float yStep = visibleLevels > 1 ? (treeBottom - treeTop) / static_cast<float>(visibleLevels - 1) : 0.0f;
+    const float radius = std::min({22.0f, xStep * 0.38f,
+                                   visibleLevels > 1 ? yStep * 0.30f : 22.0f});
+    auto nodeX = [&](const TreeNode* node) {
+        return nodeCount == 1 ? (treeLeft + treeRight) * 0.5f
+                              : treeLeft + static_cast<float>(nodeIndex(node)) * xStep;
+    };
+    auto nodeY = [&](int depth) {
+        return visibleLevels <= 1 ? (treeTop + treeBottom) * 0.5f : treeTop + depth * yStep;
+    };
+    auto countSubtree = [](const TreeNode* subtree) {
+        int count = 0;
+        std::vector<const TreeNode*> pending;
+        if (subtree) pending.push_back(subtree);
+        while (!pending.empty()) {
+            const TreeNode* node = pending.back();
+            pending.pop_back();
+            ++count;
+            if (node->left) pending.push_back(node->left);
+            if (node->right) pending.push_back(node->right);
+        }
+        return count;
+    };
+
+    struct VisibleNode { const TreeNode* node; int depth; };
+    std::vector<VisibleNode> visibleNodes;
+    if (root && visibleLevels > 0) {
+        std::vector<VisibleNode> pending{{root, 0}};
+        for (size_t cursor = 0; cursor < pending.size(); ++cursor) {
+            const VisibleNode current = pending[cursor];
+            visibleNodes.push_back(current);
+            if (current.depth + 1 < visibleLevels) {
+                if (current.node->left) pending.push_back({current.node->left, current.depth + 1});
+                if (current.node->right) pending.push_back({current.node->right, current.depth + 1});
+            }
+        }
+    }
+
+    for (const VisibleNode& item : visibleNodes) {
+        const float x = nodeX(item.node);
+        const float yNode = nodeY(item.depth);
+        const float childY = nodeY(item.depth + 1);
+        if (item.depth + 1 < visibleLevels) {
+            if (item.node->left) {
+                sf::Vertex edge[] = {sf::Vertex({x, yNode}), sf::Vertex({nodeX(item.node->left), childY})};
+                window_.draw(edge, 2, sf::Lines);
+            }
+            if (item.node->right) {
+                sf::Vertex edge[] = {sf::Vertex({x, yNode}), sf::Vertex({nodeX(item.node->right), childY})};
+                window_.draw(edge, 2, sf::Lines);
+            }
+        }
+    }
+    for (const VisibleNode& item : visibleNodes) {
+        const float x = nodeX(item.node);
+        const float yNode = nodeY(item.depth);
+        const bool latest = item.node->data.insertionId == leaderboard_.latestInsertionId();
+        sf::CircleShape circle(radius);
+        circle.setOrigin(radius, radius);
+        circle.setPosition(x, yNode);
+        circle.setFillColor(Theme::Background);
+        circle.setOutlineColor(latest ? Theme::Amber : Theme::Cyan);
+        circle.setOutlineThickness(latest ? 3.0f : 1.5f);
+        window_.draw(circle);
+        const unsigned int scoreFontSize = static_cast<unsigned int>(std::max(1.0f, std::min(14.0f, radius * 0.72f)));
+        UI::drawText(window_, fontRajdhaniBold_, std::to_string(item.node->data.score),
+                     {x, yNode}, scoreFontSize, Theme::Text, true);
+
+        if (truncated && item.depth + 1 == visibleLevels) {
+            const int hidden = countSubtree(item.node->left) + countSubtree(item.node->right);
+            if (hidden > 0) {
+                const unsigned int moreFontSize = static_cast<unsigned int>(std::max(5.0f, std::min(10.0f, xStep * 0.28f)));
+                UI::drawText(window_, fontRajdhaniMedium_, "+" + std::to_string(hidden) + " more",
+                             {x, yNode + radius + moreFontSize}, moreFontSize, Theme::TextDim, true);
+            }
+        }
+    }
     std::ostringstream sequence; sequence << (leaderboardTraversal_ == 1 ? "IN" : leaderboardTraversal_ == 2 ? "PRE" : "POST") << ": ";
     for (const auto& e : leaderboard_.traversal(leaderboardTraversal_)) sequence << e.score << " ";
     UI::drawText(window_, fontRajdhaniMedium_, sequence.str(), {675, 585}, 16, Theme::TextDim);
     UI::drawText(window_, fontRajdhaniMedium_, "1 In-order  2 Pre-order  3 Post-order", {675, 610}, 15, Theme::TextMuted);
 
-    UI::drawText(window_, fontRajdhaniBold_, "Press ESC or ENTER to return",
-                 sf::Vector2f(640.0f, 430.0f), 18, Theme::Cyan, true);
 }
 
 void Game::renderHowToPlay() {
